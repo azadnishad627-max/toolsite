@@ -11,16 +11,21 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 WORKDIR /app
 
-# Copy all files
+# Copy package files first for better Docker caching
+COPY package.json package-lock.json ./
+
+# Install dependencies with increased memory
+RUN npm install --ignore-scripts && \
+    npx --yes allow-scripts 2>/dev/null || true
+
+# Copy all source code
 COPY . ./
 
-# Install dependencies
-RUN npm install
-
-# Build the React Frontend (Vite)
+# Build the React Frontend with increased Node memory for large WASM/AI bundles
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run build
 
 EXPOSE 3001
 
-# Start the full stack server (serves both API and Frontend)
+# Start the full stack server
 CMD ["node", "server/api.js"]
