@@ -5,13 +5,15 @@ import {
   FileText, Download, Upload, Plus, Trash2, 
   Palette, LayoutTemplate, Briefcase, GraduationCap, User, Wrench
 } from 'lucide-react';
-import { TemplateModern, TemplateProfessional, TemplateCreative } from './ResumeTemplates';
+import { TemplateModern, TemplateProfessional, TemplateCreative, TemplateCanvaDark, TemplateCanvaWave } from './ResumeTemplates';
 
-const THEME_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f43f5e', '#f59e0b', '#0f172a', '#0ea5e9'];
+const THEME_COLORS = ['#3b82f6', '#0e62a2', '#8b5cf6', '#10b981', '#f43f5e', '#bca080', '#0f172a', '#0ea5e9'];
 const TEMPLATES = [
   { id: 'modern', name: 'Modern Split', component: TemplateModern },
   { id: 'professional', name: 'Classic Pro', component: TemplateProfessional },
   { id: 'creative', name: 'Creative Bold', component: TemplateCreative },
+  { id: 'canva-dark', name: 'Dark Sidebar', component: TemplateCanvaDark },
+  { id: 'canva-wave', name: 'Wave Header', component: TemplateCanvaWave },
 ];
 
 export default function ResumeBuilder() {

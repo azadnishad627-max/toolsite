@@ -268,3 +268,188 @@ export const TemplateCreative = ({ data }) => {
     </div>
   );
 };
+
+export const TemplateCanvaDark = ({ data }) => {
+  const { personal, experience, education, skills, themeColor } = data;
+  
+  return (
+    <div className="w-full h-full flex bg-white text-gray-800 font-sans" style={{ minHeight: '1122px' }}>
+      {/* Left Dark Sidebar */}
+      <div className="w-[35%] bg-[#1a1a1a] text-white p-8 border-r-8" style={{ borderRightColor: themeColor }}>
+        {personal.photo && (
+          <div className="flex justify-center mb-10 mt-4">
+            <img src={personal.photo} alt="Profile" className="w-40 h-40 rounded-full object-cover border-2 border-white" />
+          </div>
+        )}
+        
+        <div className="space-y-8">
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest mb-4 border-b border-white/30 pb-2">Contact</h3>
+            <div className="text-xs space-y-3 text-white/90">
+              <div><strong className="block text-white mb-0.5">Phone</strong>{personal.phone}</div>
+              <div><strong className="block text-white mb-0.5">Email</strong>{personal.email}</div>
+              <div><strong className="block text-white mb-0.5">Address</strong>{personal.location}</div>
+            </div>
+          </div>
+
+          {skills.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-widest mb-4 border-b border-white/30 pb-2">Expertise</h3>
+              <ul className="text-xs text-white/90 space-y-2 list-disc list-inside">
+                {skills.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Content */}
+      <div className="w-[65%] pt-12 pr-10 pb-10">
+        {/* Colored Header Block */}
+        <div className="p-8 -ml-8 mb-8 shadow-sm" style={{ backgroundColor: themeColor }}>
+          <h1 className="text-4xl font-black uppercase tracking-tight text-gray-900 mb-1">{personal.name || 'Your Name'}</h1>
+          <h2 className="text-lg font-bold uppercase tracking-widest text-gray-800">{personal.jobTitle || 'Professional Title'}</h2>
+        </div>
+
+        {personal.summary && (
+          <p className="text-xs text-gray-700 leading-relaxed mb-8 ml-8">{personal.summary}</p>
+        )}
+
+        <div className="ml-8 space-y-8">
+          {experience.length > 0 && (
+            <div>
+              <h3 className="inline-block px-2 py-1 font-bold text-sm uppercase mb-4 text-gray-900" style={{ backgroundColor: themeColor + '80' }}>
+                Work Experience
+              </h3>
+              <div className="space-y-5">
+                {experience.map((exp, i) => (
+                  <div key={i}>
+                    <h4 className="font-bold text-sm text-gray-900">{exp.position}</h4>
+                    <div className="text-xs text-gray-600 mb-2 font-medium">{exp.company} | {exp.startDate} – {exp.endDate}</div>
+                    <div className="text-xs text-gray-700 leading-relaxed pl-3 border-l-2 border-gray-200">{formatText(exp.description)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {education.length > 0 && (
+            <div>
+              <h3 className="inline-block px-2 py-1 font-bold text-sm uppercase mb-4 text-gray-900" style={{ backgroundColor: themeColor + '80' }}>
+                Education
+              </h3>
+              <div className="space-y-4">
+                {education.map((edu, i) => (
+                  <div key={i}>
+                    <h4 className="font-bold text-sm text-gray-900">{edu.degree}</h4>
+                    <div className="text-xs text-gray-600 mb-1 font-medium">{edu.institution} | {edu.year}</div>
+                    {edu.score && <div className="text-xs text-gray-700">GPA/Score: {edu.score}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const TemplateCanvaWave = ({ data }) => {
+  const { personal, experience, education, skills, themeColor } = data;
+  
+  return (
+    <div className="w-full h-full relative bg-white text-gray-800 font-sans overflow-hidden" style={{ minHeight: '1122px' }}>
+      {/* Top Wave Graphic */}
+      <svg className="absolute top-0 left-0 w-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ height: '180px' }}>
+        <path fill={themeColor} fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,154.7C1248,149,1344,107,1392,85.3L1440,64L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+      </svg>
+
+      {/* Bottom Wave Graphic */}
+      <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ height: '140px' }}>
+        <path fill={themeColor} fillOpacity="1" d="M0,256L48,229.3C96,203,192,149,288,154.7C384,160,480,224,576,250.7C672,277,768,267,864,234.7C960,203,1056,149,1152,138.7C1248,128,1344,160,1392,176L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      </svg>
+
+      {/* Header Info */}
+      <div className="relative z-10 pt-10 px-12 flex items-center gap-8 mb-8">
+        {personal.photo ? (
+          <img src={personal.photo} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg" />
+        ) : (
+          <div className="w-32 h-32 rounded-full bg-white/50 border-4 border-white shadow-lg flex items-center justify-center text-gray-500 font-bold">Photo</div>
+        )}
+        <div className="pt-8">
+          <h1 className="text-4xl font-serif font-bold uppercase text-gray-800 tracking-wider" style={{ color: themeColor }}>{personal.name || 'Your Name'}</h1>
+          <h2 className="text-sm font-bold tracking-widest text-gray-600 uppercase mt-2">{personal.jobTitle || 'Professional Title'}</h2>
+        </div>
+      </div>
+
+      {/* Grid Layout */}
+      <div className="relative z-10 px-12 grid grid-cols-12 gap-10">
+        
+        {/* Left Column */}
+        <div className="col-span-5 space-y-6">
+          {personal.summary && (
+            <div>
+              <h3 className="text-white font-bold text-[10px] px-3 py-1 uppercase mb-3 inline-block rounded tracking-wider" style={{ backgroundColor: themeColor }}>About Me</h3>
+              <p className="text-[11px] text-gray-700 leading-relaxed text-justify">{personal.summary}</p>
+            </div>
+          )}
+
+          <div>
+            <h3 className="text-white font-bold text-[10px] px-3 py-1 uppercase mb-3 inline-block rounded tracking-wider" style={{ backgroundColor: themeColor }}>Contact</h3>
+            <div className="text-[11px] text-gray-700 space-y-2">
+              <div className="flex items-center gap-2 font-medium">📞 {personal.phone}</div>
+              <div className="flex items-center gap-2 font-medium">✉️ {personal.email}</div>
+              <div className="flex items-center gap-2 font-medium">📍 {personal.location}</div>
+            </div>
+          </div>
+
+          {education.length > 0 && (
+            <div>
+              <h3 className="text-white font-bold text-[10px] px-3 py-1 uppercase mb-3 inline-block rounded tracking-wider" style={{ backgroundColor: themeColor }}>Education</h3>
+              <div className="space-y-3 text-[11px] text-gray-700">
+                {education.map((edu, i) => (
+                  <div key={i}>
+                    <strong className="block text-gray-900 text-xs mb-0.5">{edu.degree}</strong>
+                    <span className="block font-medium">{edu.institution}</span>
+                    <span className="block text-gray-500">{edu.year}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {skills.length > 0 && (
+            <div>
+              <h3 className="text-white font-bold text-[10px] px-3 py-1 uppercase mb-3 inline-block rounded tracking-wider" style={{ backgroundColor: themeColor }}>Skills</h3>
+              <ul className="text-[11px] text-gray-700 space-y-1 font-medium list-disc list-inside">
+                {skills.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column */}
+        <div className="col-span-7 space-y-6">
+          {experience.length > 0 && (
+            <div>
+              <h3 className="text-white font-bold text-[10px] px-3 py-1 uppercase mb-4 inline-block rounded tracking-wider" style={{ backgroundColor: themeColor }}>Experience</h3>
+              <div className="space-y-5">
+                {experience.map((exp, i) => (
+                  <div key={i}>
+                    <h4 className="font-bold text-sm text-gray-900">{exp.position}</h4>
+                    <div className="text-[11px] text-gray-600 font-semibold mb-2">{exp.company} | {exp.startDate} - {exp.endDate}</div>
+                    <div className="text-[11px] text-gray-700 leading-relaxed space-y-1">
+                      {formatText(exp.description)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
