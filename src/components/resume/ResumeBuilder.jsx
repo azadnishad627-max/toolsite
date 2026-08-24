@@ -17,14 +17,28 @@ const TEMPLATES = [
 ];
 
 export default function ResumeBuilder() {
-  const [data, setData] = useState({
-    personal: { name: '', jobTitle: '', email: '', phone: '', location: '', summary: '', photo: '' },
-    experience: [],
-    education: [],
-    skills: [],
-    themeColor: '#3b82f6',
-    templateId: 'modern'
+  const [data, setData] = useState(() => {
+    // Auto-load saved resume data from local storage (the "backend/background" save)
+    try {
+      const saved = localStorage.getItem('privamedia_resume_data');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load resume data', e);
+    }
+    return {
+      personal: { name: '', jobTitle: '', email: '', phone: '', location: '', summary: '', photo: '' },
+      experience: [],
+      education: [],
+      skills: [],
+      themeColor: '#3b82f6',
+      templateId: 'modern'
+    };
   });
+
+  // Auto-save to local storage whenever data changes
+  React.useEffect(() => {
+    localStorage.setItem('privamedia_resume_data', JSON.stringify(data));
+  }, [data]);
 
   const [activeSection, setActiveSection] = useState('personal');
   const printRef = useRef(null);
