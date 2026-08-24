@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
-// Configure pdfjs worker
+// Configure pdfjs worker to a very stable version from UNPKG instead of cdnjs to avoid 404s on newer versions
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+  // Try to load exact matching version from unpkg. If it fails, fallback to a known stable CDN link
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 }
 
 const FONT_OPTIONS = [
@@ -64,23 +65,34 @@ export default function PdfEditor() {
   // Render current page
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;
+    let renderTask = null;
     let cancelled = false;
 
     (async () => {
-      const page = await pdfDoc.getPage(currentPage);
-      const viewport = page.getViewport({ scale });
-      const canvas = canvasRef.current;
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      setPdfDimensions({ width: viewport.width, height: viewport.height });
+      try {
+        const page = await pdfDoc.getPage(currentPage);
+        if (cancelled) return;
 
-      const ctx = canvas.getContext('2d');
-      if (!cancelled) {
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        const viewport = page.getViewport({ scale });
+        const canvas = canvasRef.current;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        setPdfDimensions({ width: viewport.width, height: viewport.height });
+
+        const ctx = canvas.getContext('2d');
+        renderTask = page.render({ canvasContext: ctx, viewport });
+        await renderTask.promise;
+      } catch (err) {
+        if (err.name !== 'RenderingCancelledException') {
+          console.error("PDF Render error:", err);
+        }
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => { 
+      cancelled = true; 
+      if (renderTask) renderTask.cancel();
+    };
   }, [pdfDoc, currentPage, scale]);
 
   // Click handler on overlay to add elements

@@ -78,7 +78,13 @@ app.post('/api/download', async (req, res) => {
     if (mode === 'audio') {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
     } else {
-      args.push('-f', `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`, '--merge-output-format', 'mp4');
+      if (url.includes('instagram.com')) {
+        // Instagram usually serves a single stream with video+audio as 'best'
+        args.push('-f', 'best', '--merge-output-format', 'mp4');
+      } else {
+        // YouTube: Try to get mp4 video and m4a audio first for perfect merging, otherwise fallback
+        args.push('-f', `bestvideo[height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`, '--merge-output-format', 'mp4');
+      }
     }
     args.push(url.trim());
 
