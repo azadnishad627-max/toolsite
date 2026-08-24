@@ -11,6 +11,7 @@ const ImageCompressor = lazy(() => import('./components/image/ImageCompressor'))
 const FormatConverter = lazy(() => import('./components/image/FormatConverter'));
 const ExifStripper = lazy(() => import('./components/image/ExifStripper'));
 const ImageResizer = lazy(() => import('./components/image/ImageResizer'));
+const BackgroundRemover = lazy(() => import('./components/image/BackgroundRemover'));
 const PdfSuite = lazy(() => import('./components/pdf/PdfSuite'));
 const ColorPaletteExtractor = lazy(() => import('./components/tools/ColorPaletteExtractor'));
 const SocialDownloader = lazy(() => import('./components/tools/SocialDownloader'));
@@ -59,6 +60,7 @@ export default function App() {
                     <ImageCompressor onSavingsAdd={handleSavingsAdd} />
                   )}
                   {activeTab === 'resize' && <ImageResizer />}
+                  {activeTab === 'bg-remove' && <BackgroundRemover />}
                   {activeTab === 'pdf' && <PdfSuite />}
                   {activeTab === 'social' && <SocialDownloader />}
                   {activeTab === 'qr' && <QrCodeStudio />}
