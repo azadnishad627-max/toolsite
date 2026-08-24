@@ -1,13 +1,11 @@
 /**
  * Direct In-Site Media Downloader
- * Uses VITE_API_URL environment variable to connect to the Render backend when on Vercel.
  */
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export async function fetchDirectMediaStream(url, mode = 'video', quality = '720') {
   try {
-    const res = await fetch(`${API_BASE}/api/download`, {
+    // Both frontend and backend are now on the same domain, so we use relative URL
+    const res = await fetch(`/api/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: url.trim(), mode, quality }),
@@ -19,8 +17,7 @@ export async function fetchDirectMediaStream(url, mode = 'video', quality = '720
     if (data.success) {
       return {
         success: true,
-        // Make sure the stream URL also points to the backend
-        downloadUrl: `${API_BASE}${data.downloadPath}`,
+        downloadUrl: data.downloadPath,
         filename: data.filename,
         size: data.size,
       };

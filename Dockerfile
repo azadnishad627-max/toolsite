@@ -11,14 +11,16 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install --production
+# Copy all files
+COPY . ./
 
-# Copy server code
-COPY server/ ./server/
+# Install dependencies
+RUN npm install
+
+# Build the React Frontend (Vite)
+RUN npm run build
 
 EXPOSE 3001
 
-# Start the Express server
+# Start the full stack server (serves both API and Frontend)
 CMD ["node", "server/api.js"]
