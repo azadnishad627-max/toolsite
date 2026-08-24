@@ -340,7 +340,12 @@ export default function ResumeBuilder() {
                 style={{ minHeight: '1122px' }}
               >
                 <div ref={printRef} className="w-full h-full print-exact">
-                  <SelectedTemplate data={data} />
+                  <SelectedTemplate 
+                    data={data} 
+                    onChangePersonal={updatePersonal}
+                    onChangeExperience={updateExperience}
+                    onChangeEducation={updateEducation}
+                  />
                 </div>
               </div>
             </div>
