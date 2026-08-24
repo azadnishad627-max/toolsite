@@ -29,10 +29,10 @@ export const TemplateModern = ({ data }) => {
         <div className="space-y-6">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider mb-3 border-b border-white/20 pb-1">Contact</h3>
-            <div className="text-sm space-y-2 text-white/90">
+            <div className="text-sm space-y-2 text-white/90 break-all">
               <p>{personal.email}</p>
-              <p>{personal.phone}</p>
-              <p>{personal.location}</p>
+              <p className="break-words">{personal.phone}</p>
+              <p className="break-words">{personal.location}</p>
             </div>
           </div>
 
@@ -285,10 +285,10 @@ export const TemplateCanvaDark = ({ data }) => {
         <div className="space-y-8">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-widest mb-4 border-b border-white/30 pb-2">Contact</h3>
-            <div className="text-xs space-y-3 text-white/90">
-              <div><strong className="block text-white mb-0.5">Phone</strong>{personal.phone}</div>
+            <div className="text-xs space-y-3 text-white/90 break-all">
+              <div><strong className="block text-white mb-0.5">Phone</strong><span className="break-words">{personal.phone}</span></div>
               <div><strong className="block text-white mb-0.5">Email</strong>{personal.email}</div>
-              <div><strong className="block text-white mb-0.5">Address</strong>{personal.location}</div>
+              <div><strong className="block text-white mb-0.5">Address</strong><span className="break-words">{personal.location}</span></div>
             </div>
           </div>
 

@@ -28,6 +28,28 @@ export default function ResumeBuilder() {
 
   const [activeSection, setActiveSection] = useState('personal');
   const printRef = useRef(null);
+  const previewContainerRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
+
+  // Responsive scale for A4 paper preview on mobile screens
+  React.useEffect(() => {
+    const updateScale = () => {
+      if (previewContainerRef.current) {
+        const containerWidth = previewContainerRef.current.offsetWidth;
+        const padding = 32; // 16px padding on each side (p-4)
+        const availableWidth = containerWidth - padding;
+        if (availableWidth < 794) {
+          setPreviewScale(availableWidth / 794);
+        } else {
+          setPreviewScale(1);
+        }
+      }
+    };
+    
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [data.templateId]); // Re-calculate if template changes just in case
 
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
@@ -288,11 +310,24 @@ export default function ResumeBuilder() {
             </button>
           </div>
 
-          <div className="bg-slate-800 rounded-2xl p-4 overflow-x-auto shadow-2xl flex justify-center custom-scrollbar">
-            {/* A4 Paper Wrapper for Print. Scale it down slightly for view if needed */}
-            <div className="bg-white shadow-2xl overflow-hidden origin-top" style={{ width: '794px', minHeight: '1122px' }}>
-              <div ref={printRef} className="w-full h-full">
-                <SelectedTemplate data={data} />
+          <div ref={previewContainerRef} className="bg-slate-800 rounded-2xl p-4 shadow-2xl flex justify-center items-start overflow-hidden">
+            {/* A4 Paper Wrapper for Viewport. Scales down on mobile to prevent layout breaking */}
+            <div 
+              style={{ 
+                transform: `scale(${previewScale})`, 
+                transformOrigin: 'top center',
+                width: '794px',
+                height: `${1122 * previewScale}px`,
+                transition: 'transform 0.2s ease-out'
+              }}
+            >
+              <div 
+                className="bg-white shadow-2xl overflow-hidden w-[794px]" 
+                style={{ minHeight: '1122px' }}
+              >
+                <div ref={printRef} className="w-full h-full print-exact">
+                  <SelectedTemplate data={data} />
+                </div>
               </div>
             </div>
           </div>
