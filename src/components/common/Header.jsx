@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image } from 'lucide-react';
+import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image, Type } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Header({ activeTab, setActiveTab }) {
@@ -20,6 +20,7 @@ export default function Header({ activeTab, setActiveTab }) {
     { id: 'compress', label: 'Compressor', icon: Sparkles },
     { id: 'bg-remove', label: 'AI BG Remover', icon: Image },
     { id: 'resize', label: 'Resize & Crop', icon: Cpu },
+    { id: 'pdf-editor', label: 'PDF Editor', icon: Type },
     { id: 'pdf', label: 'PDF Studio (4-in-1)', icon: Layers },
     { id: 'social', label: 'YT & Insta Downloader', icon: Film },
     { id: 'qr', label: 'QR Code Studio', icon: QrCode },
