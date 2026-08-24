@@ -1,38 +1,37 @@
 /**
  * Direct In-Site Media Downloader
- * Calls our yt-dlp powered backend at /api/download.
- * Backend downloads the actual video/audio and streams it to browser.
+ * Uses VITE_API_URL environment variable to connect to the Render backend when on Vercel.
  */
 
-/**
- * Request backend to download media via yt-dlp.
- * Returns download path to stream file from server.
- */
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export async function fetchDirectMediaStream(url, mode = 'video', quality = '720') {
-  const res = await fetch('/api/download', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: url.trim(), mode, quality }),
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url.trim(), mode, quality }),
+    });
 
-  if (!res.ok) throw new Error(`Server error ${res.status}`);
-  const data = await res.json();
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
 
-  if (data.success) {
-    return {
-      success: true,
-      downloadUrl: data.downloadPath,
-      filename: data.filename,
-      size: data.size,
-    };
+    if (data.success) {
+      return {
+        success: true,
+        // Make sure the stream URL also points to the backend
+        downloadUrl: `${API_BASE}${data.downloadPath}`,
+        filename: data.filename,
+        size: data.size,
+      };
+    }
+
+    throw new Error(data.error || 'Download failed');
+  } catch (err) {
+    return { success: false, error: err.message };
   }
-
-  throw new Error(data.error || 'Download failed');
 }
 
-/**
- * Triggers browser file download from our server stream endpoint.
- */
 export function triggerDirectDownload(url, filename) {
   const a = document.createElement('a');
   a.href = url;

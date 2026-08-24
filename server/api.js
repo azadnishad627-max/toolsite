@@ -11,9 +11,13 @@ import { createReadStream, existsSync, mkdirSync, unlinkSync, statSync, readdirS
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { platform } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const YTDLP = join(__dirname, 'yt-dlp.exe');
+
+// Use Windows .exe locally, or global 'yt-dlp' on Linux (Render)
+const isWindows = platform() === 'win32';
+const YTDLP = isWindows ? join(__dirname, 'yt-dlp.exe') : 'yt-dlp';
 const TEMP_DIR = join(__dirname, 'temp');
 
 // Ensure temp dir exists
