@@ -142,7 +142,8 @@ const distPath = join(__dirname, '../dist');
 app.use(express.static(distPath));
 
 // For any other route, return the React index.html (Client-side routing fallback)
-app.get('*', (req, res) => {
+// Using app.use instead of app.get('*') to be compatible with Express 5 path-to-regexp v8 changes
+app.use((req, res) => {
   res.sendFile(join(distPath, 'index.html'));
 });
 
