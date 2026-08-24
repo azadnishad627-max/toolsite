@@ -14,4 +14,16 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          pdf: ['pdf-lib', 'pdfjs-dist'],
+          motion: ['framer-motion', 'lucide-react'],
+          utils: ['jszip', 'qrcode.react']
+        }
+      }
+    }
+  }
 })
