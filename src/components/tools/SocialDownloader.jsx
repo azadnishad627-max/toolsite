@@ -157,22 +157,6 @@ export default function SocialDownloader() {
     window.open(url, 'DownloadPopup', `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
   };
 
-  /* ── Open Fallback in Popup (not full redirect) ── */
-  const openFallbackPopup = () => {
-    const sourceUrl = platform === 'youtube' ? ytData?.watchUrl : instaData?.url;
-    if (!sourceUrl) return;
-    
-    const videoId = parseYouTubeId(sourceUrl);
-    const url = videoId
-      ? `https://ssyoutube.com/en176/?url=${encodeURIComponent(sourceUrl)}`
-      : `https://snapinsta.app/?url=${encodeURIComponent(sourceUrl)}`;
-
-    const w = 600, h = 700;
-    const left = window.screenX + (window.innerWidth - w) / 2;
-    const top = window.screenY + (window.innerHeight - h) / 2;
-    window.open(url, 'DownloadPopup', `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
-  };
-
   /* ── Status Banner ── */
   const StatusBanner = () => {
     if (!downloadStatus) return null;
