@@ -52,7 +52,7 @@ app.post('/api/info', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'URL required' });
 
   try {
-    const raw = await runYtDlp(['--dump-json', '--no-warnings', '--no-playlist', url.trim()]);
+    const raw = await runYtDlp(['--dump-json', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=android,web', url.trim()]);
     const info = JSON.parse(raw);
     res.json({ success: true, title: info.title, duration: info.duration, thumbnail: info.thumbnail });
   } catch (err) {
@@ -69,7 +69,12 @@ app.post('/api/download', async (req, res) => {
   const outPath = join(TEMP_DIR, `${fileId}.${ext}`);
 
   try {
-    const args = ['--no-warnings', '--no-playlist', '-o', outPath];
+    const args = [
+      '--no-warnings', 
+      '--no-playlist', 
+      '--extractor-args', 'youtube:player_client=android,web',
+      '-o', outPath
+    ];
     if (mode === 'audio') {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
     } else {
@@ -79,7 +84,7 @@ app.post('/api/download', async (req, res) => {
 
     let title = 'download';
     try {
-      const titleRaw = await runYtDlp(['--print', 'title', '--no-warnings', '--no-playlist', url.trim()], 15000);
+      const titleRaw = await runYtDlp(['--print', 'title', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=android,web', url.trim()], 15000);
       title = titleRaw.replace(/[<>:"/\\|?*]/g, '_').slice(0, 100);
     } catch {}
 
