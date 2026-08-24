@@ -13,6 +13,7 @@ const ExifStripper = lazy(() => import('./components/image/ExifStripper'));
 const ImageResizer = lazy(() => import('./components/image/ImageResizer'));
 const BackgroundRemover = lazy(() => import('./components/image/BackgroundRemover'));
 const PdfSuite = lazy(() => import('./components/pdf/PdfSuite'));
+const ResumeBuilder = lazy(() => import('./components/resume/ResumeBuilder'));
 const PdfEditor = lazy(() => import('./components/pdf/PdfEditor'));
 const ColorPaletteExtractor = lazy(() => import('./components/tools/ColorPaletteExtractor'));
 const SocialDownloader = lazy(() => import('./components/tools/SocialDownloader'));
@@ -64,6 +65,7 @@ export default function App() {
                   {activeTab === 'bg-remove' && <BackgroundRemover />}
                   {activeTab === 'pdf-editor' && <PdfEditor />}
                   {activeTab === 'pdf' && <PdfSuite />}
+                  {activeTab === 'resume' && <ResumeBuilder />}
                   {activeTab === 'social' && <SocialDownloader />}
                   {activeTab === 'qr' && <QrCodeStudio />}
                   {activeTab === 'convert' && <FormatConverter />}
