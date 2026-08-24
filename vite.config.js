@@ -21,7 +21,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           pdf: ['pdf-lib', 'pdfjs-dist'],
           motion: ['framer-motion', 'lucide-react'],
-          utils: ['jszip', 'qrcode.react']
+          utils: ['jszip', 'qrcode']
         }
       }
     }
