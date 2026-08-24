@@ -14,9 +14,9 @@ import { platform } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Use Windows .exe locally, or global 'yt-dlp' on Linux (Render)
+// Use Windows .exe locally, or absolute path for global 'yt-dlp' on Linux (Render Docker)
 const isWindows = platform() === 'win32';
-const YTDLP = isWindows ? join(__dirname, 'yt-dlp.exe') : 'yt-dlp';
+const YTDLP = isWindows ? join(__dirname, 'yt-dlp.exe') : '/usr/local/bin/yt-dlp';
 const TEMP_DIR = join(__dirname, 'temp');
 
 // Ensure temp dir exists

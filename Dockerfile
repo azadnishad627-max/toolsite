@@ -1,8 +1,8 @@
 FROM node:22-slim
 
-# Install Python and curl (required for yt-dlp)
+# Install Python, curl, and ffmpeg (required for yt-dlp merging)
 RUN apt-get update && \
-    apt-get install -y python3 curl && \
+    apt-get install -y python3 curl ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # Download latest linux yt-dlp binary
