@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Download, Sparkles, AlertCircle, RefreshCw, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { removeBackground } from '@imgly/background-removal';
-import { downloadSingleFile } from '../../utils/imageProcessor';
+import { downloadSingleFile } from '../../utils/zipHelper';
 
 export default function BackgroundRemover() {
   const [file, setFile] = useState(null);
