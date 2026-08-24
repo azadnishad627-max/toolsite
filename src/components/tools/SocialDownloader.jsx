@@ -118,15 +118,15 @@ export default function SocialDownloader() {
       if (result.success && result.downloadUrl) {
         setDownloadStatus('success');
         const sizeMB = result.size ? `(${(result.size / 1024 / 1024).toFixed(1)} MB)` : '';
-        setFallbackUrl(sizeMB); // reuse to show file size
+        setFallbackUrl(sizeMB);
         triggerDirectDownload(result.downloadUrl, result.filename);
       } else {
         setDownloadStatus('error');
-        setFallbackUrl('Download failed. Please try again.');
+        setFallbackUrl(result.error || 'Server blocked by YouTube. Use the fast popup alternative.');
       }
     } catch (err) {
       setDownloadStatus('error');
-      setFallbackUrl(err.message || 'Download failed. Please try again.');
+      setFallbackUrl(err.message || 'Server blocked by YouTube. Use the fast popup alternative.');
     }
   };
 
@@ -142,7 +142,31 @@ export default function SocialDownloader() {
   };
 
   /* ── Open Fallback in Popup (not full redirect) ── */
-  const openFallbackPopup = (url) => {
+  const openFallbackPopup = () => {
+    const sourceUrl = platform === 'youtube' ? ytData?.watchUrl : instaData?.url;
+    if (!sourceUrl) return;
+    
+    const videoId = parseYouTubeId(sourceUrl);
+    const url = videoId
+      ? `https://ssyoutube.com/en176/?url=${encodeURIComponent(sourceUrl)}`
+      : `https://snapinsta.app/?url=${encodeURIComponent(sourceUrl)}`;
+
+    const w = 600, h = 700;
+    const left = window.screenX + (window.innerWidth - w) / 2;
+    const top = window.screenY + (window.innerHeight - h) / 2;
+    window.open(url, 'DownloadPopup', `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+  };
+
+  /* ── Open Fallback in Popup (not full redirect) ── */
+  const openFallbackPopup = () => {
+    const sourceUrl = platform === 'youtube' ? ytData?.watchUrl : instaData?.url;
+    if (!sourceUrl) return;
+    
+    const videoId = parseYouTubeId(sourceUrl);
+    const url = videoId
+      ? `https://ssyoutube.com/en176/?url=${encodeURIComponent(sourceUrl)}`
+      : `https://snapinsta.app/?url=${encodeURIComponent(sourceUrl)}`;
+
     const w = 600, h = 700;
     const left = window.screenX + (window.innerWidth - w) / 2;
     const top = window.screenY + (window.innerHeight - h) / 2;
@@ -170,9 +194,17 @@ export default function SocialDownloader() {
     }
     if (downloadStatus === 'error') {
       return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-          {fallbackUrl || 'Download failed. Please check the URL and try again.'}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+            <span className="line-clamp-2">{fallbackUrl}</span>
+          </div>
+          <button
+            onClick={openFallbackPopup}
+            className="w-full py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all flex items-center justify-center gap-2 mt-2"
+          >
+            <Download className="w-4 h-4" /> Open Fast Download Alternative
+          </button>
         </motion.div>
       );
     }
