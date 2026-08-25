@@ -1,0 +1,13 @@
+agnes-2.0-flash
+agnes-2.5-flash
+laguna-s-2.1
+minimax-m3-free
+mistral-large
+mistral-medium-3-5
+nemotron-3-ultra
+ox-alpha
+qwen-3.8-max-free
+qwen3.8-27b
+stepfun-3.7-flash
+tencent-hy3-free
+deepseek-v4-flash

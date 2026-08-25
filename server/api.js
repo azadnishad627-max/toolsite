@@ -66,55 +66,90 @@ app.post('/api/download', async (req, res) => {
 
   const fileId = randomUUID();
   const ext = mode === 'audio' ? 'mp3' : 'mp4';
-  const outPath = join(TEMP_DIR, `${fileId}.${ext}`);
+  // Use %(ext)s so yt-dlp writes the correct extension itself; we find the file afterwards
+  const outTemplate = join(TEMP_DIR, `${fileId}.%(ext)s`);
+  const outPathFixed = join(TEMP_DIR, `${fileId}.${ext}`);
 
   try {
     const args = [
       '--no-warnings', 
       '--no-playlist', 
       '--extractor-args', 'youtube:player_client=android,web',
-      '-o', outPath
+      '-o', outTemplate
     ];
+
     if (mode === 'audio') {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
     } else {
-      // For Instagram, 'best' ensures we grab the pre-merged file with both video and audio. 
-      // Separate streams on IG sometimes result in silent videos.
-      const fmt = url.includes('instagram.com') 
-        ? 'b'
-        : `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`;
-      
-      args.push('-f', fmt, '--merge-output-format', 'mp4');
+      const isInsta = url.includes('instagram.com') || url.includes('instagr.am');
+
+      if (isInsta) {
+        // Instagram: Try best video+audio merge first, fall back to best single stream
+        // --audio-multistreams ensures all audio tracks are kept during merge
+        args.push(
+          '-f', 'bestvideo*+bestaudio/best',
+          '--audio-multistreams',
+          '--merge-output-format', 'mp4'
+        );
+      } else {
+        // YouTube: quality-limited download with merge
+        args.push(
+          '-f', `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`,
+          '--merge-output-format', 'mp4'
+        );
+      }
     }
     args.push(url.trim());
 
     let title = 'download';
     try {
       const titleRaw = await runYtDlp(['--print', 'title', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=android,web', url.trim()], 15000);
-      title = titleRaw.replace(/[<>:"/\\|?*]/g, '_').slice(0, 100);
+      title = titleRaw.replace(/[<>:"/\\|?*]/g, '_').trim().slice(0, 100) || 'download';
     } catch {}
 
     await runYtDlp(args, 120000);
 
-    let actualPath = outPath;
-    if (!existsSync(actualPath)) {
-      for (const v of [`${outPath}`, `${outPath}.mp4`, `${outPath}.mp3`, `${outPath}.webm`]) {
-        if (existsSync(v)) { actualPath = v; break; }
-      }
+    // Find the actual output file — yt-dlp may have written .mp4, .webm, .mkv, etc.
+    let actualPath = null;
+    const possibleExts = ['mp4', 'mkv', 'webm', 'mp3', 'm4a', 'opus'];
+    for (const tryExt of possibleExts) {
+      const candidate = join(TEMP_DIR, `${fileId}.${tryExt}`);
+      if (existsSync(candidate)) { actualPath = candidate; break; }
     }
-    if (!existsSync(actualPath)) return res.json({ success: false, error: 'Download failed' });
+
+    // Also scan for any file starting with the fileId (handles edge cases)
+    if (!actualPath) {
+      try {
+        const allFiles = readdirSync(TEMP_DIR);
+        const match = allFiles.find(f => f.startsWith(fileId));
+        if (match) actualPath = join(TEMP_DIR, match);
+      } catch {}
+    }
+
+    if (!actualPath) return res.json({ success: false, error: 'Download failed — file not found after processing' });
+
+    // Determine actual extension for serving
+    const actualExt = actualPath.split('.').pop() || ext;
 
     const stat = statSync(actualPath);
     res.json({
       success: true,
       fileId,
-      filename: `${title}.${ext}`,
+      filename: `${title}.${actualExt}`,
       size: stat.size,
-      downloadPath: `/api/file/${fileId}?ext=${ext}&name=${encodeURIComponent(`${title}.${ext}`)}`,
+      downloadPath: `/api/file/${fileId}?ext=${actualExt}&name=${encodeURIComponent(`${title}.${actualExt}`)}`,
     });
   } catch (err) {
-    try { if (existsSync(outPath)) unlinkSync(outPath); } catch {}
-    res.json({ success: false, error: err.message.slice(0, 200) });
+    // Cleanup any partial files
+    try {
+      const allFiles = readdirSync(TEMP_DIR);
+      for (const f of allFiles) {
+        if (f.startsWith(fileId)) {
+          try { unlinkSync(join(TEMP_DIR, f)); } catch {}
+        }
+      }
+    } catch {}
+    res.json({ success: false, error: err.message.slice(0, 300) });
   }
 });
 
@@ -122,12 +157,27 @@ app.get('/api/file/:id', (req, res) => {
   const { id } = req.params;
   const ext = req.query.ext || 'mp4';
   const name = req.query.name || `download.${ext}`;
-  const filePath = join(TEMP_DIR, `${id}.${ext}`);
+  let filePath = join(TEMP_DIR, `${id}.${ext}`);
+
+  // If exact path not found, scan for any file with this id
+  if (!existsSync(filePath)) {
+    try {
+      const allFiles = readdirSync(TEMP_DIR);
+      const match = allFiles.find(f => f.startsWith(id));
+      if (match) filePath = join(TEMP_DIR, match);
+    } catch {}
+  }
 
   if (!existsSync(filePath)) return res.status(404).json({ error: 'File not found or expired' });
 
+  const mimeTypes = {
+    mp4: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm',
+    mp3: 'audio/mpeg', m4a: 'audio/mp4', opus: 'audio/opus',
+  };
+  const fileExt = filePath.split('.').pop() || 'mp4';
+
   const stat = statSync(filePath);
-  res.setHeader('Content-Type', ext === 'mp3' ? 'audio/mpeg' : 'video/mp4');
+  res.setHeader('Content-Type', mimeTypes[fileExt] || 'application/octet-stream');
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
 
@@ -140,7 +190,9 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 function runYtDlp(args, timeout = 60000) {
   return new Promise((resolve, reject) => {
+    console.log(`[yt-dlp] Running: ${args.join(' ')}`);
     execFile(YTDLP, args, { timeout, maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+      if (stderr) console.log(`[yt-dlp stderr] ${stderr.slice(0, 500)}`);
       if (err) return reject(new Error(stderr || err.message));
       resolve(stdout.trim());
     });
