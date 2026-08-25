@@ -52,7 +52,7 @@ app.post('/api/info', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'URL required' });
 
   try {
-    const raw = await runYtDlp(['--dump-json', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=android,web', url.trim()]);
+    const raw = await runYtDlp(['--dump-json', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=ios,web', url.trim()]);
     const info = JSON.parse(raw);
     res.json({ success: true, title: info.title, duration: info.duration, thumbnail: info.thumbnail });
   } catch (err) {
@@ -71,39 +71,42 @@ app.post('/api/download', async (req, res) => {
   const outPathFixed = join(TEMP_DIR, `${fileId}.${ext}`);
 
   try {
+    const isInsta = url.includes('instagram.com') || url.includes('instagr.am');
+    const isYT = url.includes('youtube.com') || url.includes('youtu.be');
+
     const args = [
       '--no-warnings', 
-      '--no-playlist', 
-      '--extractor-args', 'youtube:player_client=android,web',
+      '--no-playlist',
+      '--no-check-certificates',
       '-o', outTemplate
     ];
 
+    // Use iOS client for YouTube — it bypasses many DASH restrictions on cloud servers
+    if (isYT) {
+      args.push('--extractor-args', 'youtube:player_client=ios,web');
+    }
+
     if (mode === 'audio') {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
+    } else if (isInsta) {
+      args.push(
+        '-f', 'bestvideo*+bestaudio/best',
+        '--audio-multistreams',
+        '--merge-output-format', 'mp4'
+      );
     } else {
-      const isInsta = url.includes('instagram.com') || url.includes('instagr.am');
-
-      if (isInsta) {
-        // Instagram: Try best video+audio merge first, fall back to best single stream
-        // --audio-multistreams ensures all audio tracks are kept during merge
-        args.push(
-          '-f', 'bestvideo*+bestaudio/best',
-          '--audio-multistreams',
-          '--merge-output-format', 'mp4'
-        );
-      } else {
-        // YouTube: quality-limited download with merge
-        args.push(
-          '-f', `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`,
-          '--merge-output-format', 'mp4'
-        );
-      }
+      // YouTube: Use format-sort to prioritize resolution, then try merge
+      args.push(
+        '-f', `bestvideo[height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`,
+        '-S', `res:${quality},ext:mp4:m4a`,
+        '--merge-output-format', 'mp4'
+      );
     }
     args.push(url.trim());
 
     let title = 'download';
     try {
-      const titleRaw = await runYtDlp(['--print', 'title', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=android,web', url.trim()], 15000);
+      const titleRaw = await runYtDlp(['--print', 'title', '--no-warnings', '--no-playlist', '--extractor-args', 'youtube:player_client=ios,web', url.trim()], 15000);
       title = titleRaw.replace(/[<>:"/\\|?*]/g, '_').trim().slice(0, 100) || 'download';
     } catch {}
 
