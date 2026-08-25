@@ -78,9 +78,10 @@ app.post('/api/download', async (req, res) => {
     if (mode === 'audio') {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
     } else {
-      // For both YT and Insta, strictly demand video+audio merging first, then fallback to combined best
+      // For Instagram, 'best' ensures we grab the pre-merged file with both video and audio. 
+      // Separate streams on IG sometimes result in silent videos.
       const fmt = url.includes('instagram.com') 
-        ? 'bestvideo+bestaudio/best'
+        ? 'b'
         : `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]/best`;
       
       args.push('-f', fmt, '--merge-output-format', 'mp4');
