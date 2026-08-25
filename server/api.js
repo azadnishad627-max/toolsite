@@ -6,7 +6,7 @@
 import express from 'express';
 import cors from 'cors';
 import { execFile } from 'child_process';
-import { createReadStream, existsSync, mkdirSync, unlinkSync, statSync, readdirSync } from 'fs';
+import { createReadStream, existsSync, mkdirSync, unlinkSync, statSync, readdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
@@ -46,6 +46,91 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+/* ── Instagram GraphQL Direct Extraction (SnapInsta technique) ── */
+const IG_APP_ID = '936619743392459';
+
+async function extractInstagramDirect(postUrl) {
+  // Extract shortcode from URL
+  const m = postUrl.match(/instagram\.com\/(?:p|reel|reels|tv)\/([a-zA-Z0-9_-]+)/);
+  if (!m) return null;
+  const shortcode = m[1];
+
+  console.log(`[IG GraphQL] Trying direct extraction for shortcode: ${shortcode}`);
+
+  // Method 1: Try the public oEmbed-like endpoint first (simplest, no auth needed)
+  try {
+    const oembedRes = await fetch(`https://www.instagram.com/p/${shortcode}/?__a=1&__d=dis`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+        'Accept': '*/*',
+        'X-IG-App-ID': IG_APP_ID,
+      },
+    });
+    if (oembedRes.ok) {
+      const data = await oembedRes.json();
+      const item = data?.graphql?.shortcode_media || data?.items?.[0];
+      if (item) {
+        const videoUrl = item.video_url || item.video_versions?.[0]?.url;
+        if (videoUrl) {
+          console.log(`[IG GraphQL] Method 1 success — got direct video URL`);
+          return { videoUrl, title: (item.title || item.caption?.text || shortcode).slice(0, 100) };
+        }
+      }
+    }
+  } catch (err) {
+    console.log(`[IG GraphQL] Method 1 failed: ${err.message}`);
+  }
+
+  // Method 2: Try GraphQL query endpoint
+  try {
+    const variables = JSON.stringify({ shortcode, child_comment_count: 0, fetch_comment_count: 0, has_threaded_comments: false });
+    const graphqlRes = await fetch(`https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(variables)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'X-IG-App-ID': IG_APP_ID,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    if (graphqlRes.ok) {
+      const gqlData = await graphqlRes.json();
+      const media = gqlData?.data?.shortcode_media;
+      if (media?.video_url) {
+        console.log(`[IG GraphQL] Method 2 success — got direct video URL`);
+        return { videoUrl: media.video_url, title: (media.title || media.edge_media_to_caption?.edges?.[0]?.node?.text || shortcode).slice(0, 100) };
+      }
+    }
+  } catch (err) {
+    console.log(`[IG GraphQL] Method 2 failed: ${err.message}`);
+  }
+
+  // Method 3: Scrape the page HTML for embedded video URL
+  try {
+    const pageRes = await fetch(`https://www.instagram.com/reel/${shortcode}/`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+    });
+    if (pageRes.ok) {
+      const html = await pageRes.text();
+      // Look for video_url in the page source
+      const videoMatch = html.match(/"video_url"\s*:\s*"([^"]+)"/);
+      if (videoMatch) {
+        const videoUrl = videoMatch[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
+        console.log(`[IG GraphQL] Method 3 (HTML scrape) success`);
+        const titleMatch = html.match(/"text"\s*:\s*"([^"]{1,100})"/);
+        return { videoUrl, title: titleMatch ? titleMatch[1].slice(0, 100) : shortcode };
+      }
+    }
+  } catch (err) {
+    console.log(`[IG GraphQL] Method 3 failed: ${err.message}`);
+  }
+
+  console.log(`[IG GraphQL] All methods failed, will fallback to yt-dlp`);
+  return null;
+}
+
 /* ── API ROUTES ── */
 app.post('/api/info', async (req, res) => {
   const { url } = req.body;
@@ -73,6 +158,42 @@ app.post('/api/download', async (req, res) => {
   try {
     const isInsta = url.includes('instagram.com') || url.includes('instagr.am');
     const isYT = url.includes('youtube.com') || url.includes('youtu.be');
+
+    // ── INSTAGRAM: Try direct GraphQL extraction FIRST (guaranteed audio) ──
+    if (isInsta && mode === 'video') {
+      try {
+        const igResult = await extractInstagramDirect(url);
+        if (igResult && igResult.videoUrl) {
+          console.log(`[IG Direct] Downloading from CDN...`);
+          const videoRes = await fetch(igResult.videoUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+            },
+          });
+          if (videoRes.ok) {
+            const buffer = Buffer.from(await videoRes.arrayBuffer());
+            const outPath = join(TEMP_DIR, `${fileId}.mp4`);
+            writeFileSync(outPath, buffer);
+
+            const title = igResult.title.replace(/[<>:"/\\|?*\n\r]/g, '_').trim().slice(0, 100) || 'instagram_reel';
+            const stat = statSync(outPath);
+
+            console.log(`[IG Direct] Success! File size: ${(stat.size / 1024 / 1024).toFixed(1)} MB`);
+            return res.json({
+              success: true,
+              fileId,
+              filename: `${title}.mp4`,
+              size: stat.size,
+              downloadPath: `/api/file/${fileId}?ext=mp4&name=${encodeURIComponent(`${title}.mp4`)}`,
+            });
+          }
+        }
+      } catch (igErr) {
+        console.log(`[IG Direct] GraphQL method failed, falling back to yt-dlp: ${igErr.message}`);
+      }
+    }
+
+    // ── FALLBACK: yt-dlp for YouTube + Instagram failures ──
 
     const args = [
       '--no-warnings', 
