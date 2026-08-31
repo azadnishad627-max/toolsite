@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image, Type, FileText, ChevronDown, Hash, Code2, Calculator, KeyRound, AlignLeft, Clock, Percent, Binary, Pipette, Ruler, TextCursorInput } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image, Type, FileText, Hash, Code2, Calculator, KeyRound, AlignLeft, Clock, Percent, Binary, Pipette, Ruler, TextCursorInput, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Header({ activeTab, setActiveTab }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const dropdownRef = useRef(null);
+  const [filterCat, setFilterCat] = useState('all');
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -18,89 +17,52 @@ export default function Header({ activeTab, setActiveTab }) {
     };
   }, []);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  // Top-level direct nav items (most popular tools)
-  const mainNav = [
-    { id: 'compress', label: 'Compressor', icon: Sparkles },
-    { id: 'bg-remove', label: 'AI BG Remover', icon: Image },
-    { id: 'social', label: 'Downloader', icon: Film },
-    { id: 'resume', label: 'CV Builder', icon: FileText },
+  const allTools = [
+    // Image Tools
+    { id: 'compress', label: 'Compressor', icon: Sparkles, cat: 'image' },
+    { id: 'resize', label: 'Resize & Crop', icon: Cpu, cat: 'image' },
+    { id: 'bg-remove', label: 'AI BG Remover', icon: Image, cat: 'image' },
+    { id: 'convert', label: 'Format Converter', icon: Layers, cat: 'image' },
+    { id: 'exif', label: 'EXIF Wiper', icon: ShieldCheck, cat: 'image' },
+    { id: 'favicon', label: 'Favicon Gen', icon: Sparkles, cat: 'image' },
+    { id: 'palette', label: 'Color Palette', icon: Palette, cat: 'image' },
+    // PDF & Docs
+    { id: 'pdf-editor', label: 'PDF Editor', icon: Type, cat: 'pdf' },
+    { id: 'pdf', label: 'PDF Suite', icon: Layers, cat: 'pdf' },
+    { id: 'resume', label: 'CV Builder', icon: FileText, cat: 'pdf' },
+    // Text
+    { id: 'word-counter', label: 'Word Counter', icon: Hash, cat: 'text' },
+    { id: 'case-converter', label: 'Case Converter', icon: TextCursorInput, cat: 'text' },
+    { id: 'lorem', label: 'Lorem Ipsum', icon: AlignLeft, cat: 'text' },
+    // Developer
+    { id: 'json', label: 'JSON Formatter', icon: Code2, cat: 'dev' },
+    { id: 'base64', label: 'Base64 Tool', icon: Binary, cat: 'dev' },
+    { id: 'qr', label: 'QR Code', icon: QrCode, cat: 'dev' },
+    // Tools & Calculators
+    { id: 'social', label: 'YT & Insta', icon: Film, cat: 'tools' },
+    { id: 'password', label: 'Password Gen', icon: KeyRound, cat: 'tools' },
+    { id: 'color-picker', label: 'Color Picker', icon: Pipette, cat: 'tools' },
+    { id: 'unit-convert', label: 'Unit Converter', icon: Ruler, cat: 'tools' },
+    { id: 'percent-calc', label: '% Calculator', icon: Percent, cat: 'tools' },
+    { id: 'age-calc', label: 'Age Calculator', icon: Clock, cat: 'tools' },
   ];
 
-  // Categorized dropdown menus
-  const categories = [
-    {
-      label: '🖼️ Image',
-      items: [
-        { id: 'compress', label: 'Image Compressor', icon: Sparkles },
-        { id: 'resize', label: 'Resize & Crop', icon: Cpu },
-        { id: 'bg-remove', label: 'AI BG Remover', icon: Image },
-        { id: 'convert', label: 'Format Converter', icon: Layers },
-        { id: 'exif', label: 'EXIF Wiper', icon: ShieldCheck },
-        { id: 'favicon', label: 'Favicon Generator', icon: Sparkles },
-        { id: 'palette', label: 'Color Palette AI', icon: Palette },
-      ],
-    },
-    {
-      label: '📄 PDF & Docs',
-      items: [
-        { id: 'pdf-editor', label: 'PDF Editor', icon: Type },
-        { id: 'pdf', label: 'PDF Studio (4-in-1)', icon: Layers },
-        { id: 'resume', label: 'Resume Builder', icon: FileText },
-      ],
-    },
-    {
-      label: '📝 Text',
-      items: [
-        { id: 'word-counter', label: 'Word Counter', icon: Hash },
-        { id: 'case-converter', label: 'Case Converter', icon: TextCursorInput },
-        { id: 'lorem', label: 'Lorem Ipsum', icon: AlignLeft },
-      ],
-    },
-    {
-      label: '💻 Developer',
-      items: [
-        { id: 'json', label: 'JSON Formatter', icon: Code2 },
-        { id: 'base64', label: 'Base64 Tool', icon: Binary },
-        { id: 'qr', label: 'QR Code Studio', icon: QrCode },
-      ],
-    },
-    {
-      label: '🔧 Tools',
-      items: [
-        { id: 'password', label: 'Password Generator', icon: KeyRound },
-        { id: 'color-picker', label: 'Color Picker', icon: Pipette },
-        { id: 'unit-convert', label: 'Unit Converter', icon: Ruler },
-        { id: 'percent-calc', label: '% Calculator', icon: Percent },
-        { id: 'age-calc', label: 'Age Calculator', icon: Clock },
-        { id: 'social', label: 'YT & Insta Downloader', icon: Film },
-      ],
-    },
+  const categoryFilters = [
+    { id: 'all', label: 'All (22)' },
+    { id: 'image', label: '🖼️ Image' },
+    { id: 'pdf', label: '📄 PDF' },
+    { id: 'text', label: '📝 Text' },
+    { id: 'dev', label: '💻 Dev' },
+    { id: 'tools', label: '🔧 Tools' },
   ];
 
-  const handleSelect = (id) => {
-    setActiveTab(id);
-    setOpenDropdown(null);
-  };
-
-  // Check if current tab is inside a category
-  const isTabInCategory = (cat) => cat.items.some(item => item.id === activeTab);
+  const filteredTools = filterCat === 'all' ? allTools : allTools.filter(t => t.cat === filterCat);
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#070913]/85 border-b border-white/10 px-4 lg:px-8 py-3 transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Brand & Logo */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+      <div className="max-w-7xl mx-auto flex flex-col gap-3">
+        {/* Top Row: Brand + Status */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.div
               whileHover={{ rotate: 180, scale: 1.1 }}
@@ -121,28 +83,48 @@ export default function Header({ activeTab, setActiveTab }) {
                   22 Tools
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">All-in-One Free Toolkit</p>
+              <p className="text-xs text-slate-400 font-medium hidden sm:block">All-in-One Free Toolkit</p>
             </div>
           </div>
 
-          {/* Mobile Status */}
-          <div className="flex md:hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="font-medium text-[11px]">Free</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-medium">100% Free</span>
+            </div>
           </div>
         </div>
 
-        {/* Navigation: Main + Category Dropdowns */}
-        <div ref={dropdownRef} className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none">
-          {/* Main Quick Nav */}
-          {mainNav.map((item) => {
+        {/* Category Filter Row */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+          {categoryFilters.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFilterCat(c.id)}
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${
+                filterCat === c.id
+                  ? 'bg-indigo-600/80 text-white border border-indigo-400/40'
+                  : 'text-slate-400 hover:text-white bg-white/5 border border-transparent'
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tools Scroll Row */}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+          {filteredTools.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => handleSelect(item.id)}
-                className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 ${
+                onClick={() => setActiveTab(item.id)}
+                className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 shrink-0 ${
                   isActive
                     ? 'text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -160,73 +142,6 @@ export default function Header({ activeTab, setActiveTab }) {
               </button>
             );
           })}
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-white/10 mx-1 shrink-0" />
-
-          {/* Category Dropdowns */}
-          {categories.map((cat) => {
-            const isOpen = openDropdown === cat.label;
-            const hasActive = isTabInCategory(cat);
-            return (
-              <div key={cat.label} className="relative">
-                <button
-                  onClick={() => setOpenDropdown(isOpen ? null : cat.label)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1 ${
-                    hasActive || isOpen
-                      ? 'text-white bg-white/10 border border-white/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 mt-2 w-56 py-2 rounded-xl bg-[#0f1323] border border-white/10 shadow-2xl shadow-black/50 z-50"
-                    >
-                      {cat.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive2 = activeTab === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => handleSelect(item.id)}
-                            className={`w-full px-4 py-2.5 text-left text-xs font-medium flex items-center gap-2.5 transition-all ${
-                              isActive2
-                                ? 'text-white bg-indigo-600/30'
-                                : 'text-slate-300 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <Icon className={`w-4 h-4 ${isActive2 ? 'text-cyan-400' : 'text-slate-500'}`} />
-                            {item.label}
-                            {isActive2 && <span className="ml-auto text-[10px] text-cyan-400 font-bold">●</span>}
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Right Status */}
-        <div className="hidden md:flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-medium">100% Free</span>
-          </div>
         </div>
       </div>
     </header>
