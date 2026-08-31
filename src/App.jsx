@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Lazy load tools to split the bundle and make the initial load super fast and smooth
 const ImageCompressor = lazy(() => import('./components/image/ImageCompressor'));
+const PhotoEnhancer = lazy(() => import('./components/image/PhotoEnhancer'));
 const FormatConverter = lazy(() => import('./components/image/FormatConverter'));
 const ExifStripper = lazy(() => import('./components/image/ExifStripper'));
 const ImageResizer = lazy(() => import('./components/image/ImageResizer'));
@@ -73,6 +74,7 @@ export default function App() {
                   {activeTab === 'compress' && (
                     <ImageCompressor onSavingsAdd={handleSavingsAdd} />
                   )}
+                  {activeTab === 'enhancer' && <PhotoEnhancer />}
                   {activeTab === 'resize' && <ImageResizer />}
                   {activeTab === 'bg-remove' && <BackgroundRemover />}
                   {activeTab === 'pdf-editor' && <PdfEditor />}

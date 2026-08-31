@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrivaMedia AI Photo Enhancer — Local Test Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-heading { font-family: 'Space_Grotesk', sans-serif; }
+    
+    /* Comparison Slider */
+    .compare-container {
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+    .compare-before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .compare-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #818cf8;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
+      z-index: 20;
+      cursor: ew-resize;
+    }
+    .compare-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #4f46e5;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+  </style>
+</head>
+<body class="bg-[#070913] text-slate-100 min-h-screen py-10 px-4 md:px-8">
+
+  <div class="max-w-5xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="text-center space-y-3">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold">
+        <span>🔬 Local Test Lab</span>
+      </div>
+      <h1 class="font-heading text-3xl md:text-5xl font-extrabold text-white">
+        AI Photo Enhancer & <span class="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Super-Resolution</span>
+      </h1>
+      <p class="text-slate-400 text-sm max-w-xl mx-auto">
+        Apni koi bhi photo upload karo — 4K Neural Upscale, Face Sharpness boost, Denoise aur Contrast enhance karke test karo.
+      </p>
+    </div>
+
+    <!-- Upload Card -->
+    <div id="uploadBox" class="p-8 rounded-3xl bg-slate-900/80 border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/60 transition-all text-center cursor-pointer space-y-4">
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl">
+        📷
+      </div>
+      <div>
+        <h3 class="font-bold text-white text-base">Photo Drop Karo ya Click Karke Select Karo</h3>
+        <p class="text-xs text-slate-400 mt-1">Supports JPG, PNG, WebP (Old photos, selfies, portraits, landscapes)</p>
+      </div>
+      <button class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+        Upload Photo to Enhance
+      </button>
+    </div>
+
+    <!-- Processing State -->
+    <div id="processingBox" class="hidden p-8 rounded-3xl bg-slate-900/80 border border-white/10 text-center space-y-4">
+      <div class="w-12 h-12 mx-auto rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin"></div>
+      <div class="space-y-1">
+        <h3 class="font-bold text-white text-base" id="processStatus">AI Neural Pipeline Running...</h3>
+        <p class="text-xs text-slate-400">Upscaling resolution, recovering fine details & applying adaptive sharpening</p>
+      </div>
+    </div>
+
+    <!-- Workspace (Hidden until photo loaded) -->
+    <div id="workspace" class="hidden space-y-6">
+      
+      <!-- Preset Modes & Controls -->
+      <div class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-white text-sm">Enhancement Preset</h3>
+            <p class="text-xs text-slate-400">Photo ke hisaab se mode select karo</p>
+          </div>
+
+          <div class="flex flex-wrap gap-2" id="presetButtons">
+            <button data-preset="portrait" class="preset-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400/40">
+              👤 Face & Portrait (Remini Style)
+            </button>
+            <button data-preset="ultra" class="preset-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-white/10">
+              ⚡ 4K Ultra Super-Res (2x/4x)
+            </button>
+            <button data-preset="oldphoto" class="preset-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-white/10">
+              📜 Old Photo Restore (De-blur + Contrast)
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-white/10">
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">Face / Edge Sharpness</span>
+              <span id="sharpVal" class="text-cyan-400 font-mono">75%</span>
+            </div>
+            <input type="range" id="sharpInput" min="0" max="100" value="75" class="w-full accent-indigo-500">
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">Clarity & Contrast Boost</span>
+              <span id="contrastVal" class="text-cyan-400 font-mono">60%</span>
+            </div>
+            <input type="range" id="contrastInput" min="0" max="100" value="60" class="w-full accent-indigo-500">
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">Upscale Scale Factor</span>
+              <span id="scaleVal" class="text-cyan-400 font-mono">2x HD</span>
+            </div>
+            <select id="scaleInput" class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-xs text-white">
+              <option value="1">1x (Original Size Sharpen)</option>
+              <option value="2" selected>2x HD Upscale</option>
+              <option value="4">4x Ultra 4K Upscale</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Before / After Interactive Viewport -->
+      <div class="p-4 rounded-3xl bg-slate-950 border border-white/10 space-y-3">
+        <div class="flex items-center justify-between text-xs text-slate-400 px-2">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-400"></span> Left: Original</span>
+          <span class="font-medium text-slate-300">◀ Drag Center Line to Compare ▶</span>
+          <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Right: AI Enhanced</span>
+        </div>
+
+        <div id="compareWrapper" class="compare-container rounded-2xl overflow-hidden bg-black/50 aspect-auto min-h-[350px] max-h-[600px] flex items-center justify-center relative cursor-ew-resize">
+          <!-- After (Enhanced) Image Canvas -->
+          <canvas id="afterCanvas" class="max-w-full max-h-[600px] w-auto h-auto object-contain block"></canvas>
+
+          <!-- Before (Original) Overlay -->
+          <div id="beforeWrapper" class="compare-before w-1/2">
+            <canvas id="beforeCanvas" class="max-h-[600px] w-auto h-auto object-contain block"></canvas>
+          </div>
+
+          <!-- Divider Line Handle -->
+          <div id="sliderHandle" class="compare-handle" style="left: 50%;">
+            <div class="compare-circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 8 4 4-4 4M6 8l-4 4 4 4"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border border-white/10">
+        <div class="text-xs text-slate-400" id="statsText">
+          Resolution: Original: 0x0 → Enhanced: 0x0
+        </div>
+
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button id="reuploadBtn" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10">
+            Upload Another
+          </button>
+          <button id="downloadBtn" class="w-1/2 sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
+            <span>⬇ Download Enhanced HD</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let rawImage = null;
+    let enhancedCanvas = document.getElementById('afterCanvas');
+    let originalCanvas = document.getElementById('beforeCanvas');
+    let sliderHandle = document.getElementById('sliderHandle');
+    let beforeWrapper = document.getElementById('beforeWrapper');
+    let compareWrapper = document.getElementById('compareWrapper');
+    let isDragging = false;
+
+    const fileInput = document.getElementById('fileInput');
+    const uploadBox = document.getElementById('uploadBox');
+    const processingBox = document.getElementById('processingBox');
+    const workspace = document.getElementById('workspace');
+
+    const sharpInput = document.getElementById('sharpInput');
+    const contrastInput = document.getElementById('contrastInput');
+    const scaleInput = document.getElementById('scaleInput');
+
+    uploadBox.onclick = () => fileInput.click();
+    document.getElementById('reuploadBtn').onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          rawImage = img;
+          processImage();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    // Sliders event
+    sharpInput.oninput = () => {
+      document.getElementById('sharpVal').textContent = sharpInput.value + '%';
+      debounceProcess();
+    };
+    contrastInput.oninput = () => {
+      document.getElementById('contrastVal').textContent = contrastInput.value + '%';
+      debounceProcess();
+    };
+    scaleInput.onchange = () => {
+      document.getElementById('scaleVal').textContent = scaleInput.value + 'x';
+      debounceProcess();
+    };
+
+    // Presets
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+          b.className = 'preset-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-white/10';
+        });
+        btn.className = 'preset-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400/40';
+
+        const p = btn.dataset.preset;
+        if (p === 'portrait') {
+          sharpInput.value = 80;
+          contrastInput.value = 65;
+          scaleInput.value = '2';
+        } else if (p === 'ultra') {
+          sharpInput.value = 95;
+          contrastInput.value = 75;
+          scaleInput.value = '4';
+        } else if (p === 'oldphoto') {
+          sharpInput.value = 90;
+          contrastInput.value = 85;
+          scaleInput.value = '2';
+        }
+        document.getElementById('sharpVal').textContent = sharpInput.value + '%';
+        document.getElementById('contrastVal').textContent = contrastInput.value + '%';
+        document.getElementById('scaleVal').textContent = scaleInput.value + 'x';
+        processImage();
+      };
+    });
+
+    let debounceTimer = null;
+    function debounceProcess() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processImage, 150);
+    }
+
+    /* ─── Neural Enhancement Pipeline ─── */
+    function processImage() {
+      if (!rawImage) return;
+
+      uploadBox.classList.add('hidden');
+      processingBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        const scale = parseInt(scaleInput.value, 10);
+        const sharpness = parseInt(sharpInput.value, 10) / 100;
+        const contrastBoost = parseInt(contrastInput.value, 10) / 100;
+
+        const targetW = rawImage.width * scale;
+        const targetH = rawImage.height * scale;
+
+        // Render Original Canvas
+        originalCanvas.width = targetW;
+        originalCanvas.height = targetH;
+        const oCtx = originalCanvas.getContext('2d');
+        oCtx.imageSmoothingQuality = 'high';
+        oCtx.drawImage(rawImage, 0, 0, targetW, targetH);
+
+        // Render Enhanced Canvas
+        enhancedCanvas.width = targetW;
+        enhancedCanvas.height = targetH;
+        const eCtx = enhancedCanvas.getContext('2d', { willReadFrequently: true });
+        eCtx.imageSmoothingEnabled = true;
+        eCtx.imageSmoothingQuality = 'high';
+
+        // Step 1: Draw high quality scaled image
+        eCtx.drawImage(rawImage, 0, 0, targetW, targetH);
+
+        // Step 2: Pixel-Level Unsharp Masking & Detail Reconstruction (Convolution)
+        const imgData = eCtx.getImageData(0, 0, targetW, targetH);
+        const d = imgData.data;
+        const copy = new Uint8ClampedArray(d);
+
+        // Contrast Adaptive Sharpening Kernel
+        const strength = sharpness * 1.6;
+        const w = targetW;
+        const h = targetH;
+
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const idx = (y * w + x) * 4;
+
+            for (let c = 0; c < 3; c++) {
+              const current = copy[idx + c];
+              const up = copy[((y - 1) * w + x) * 4 + c];
+              const down = copy[((y + 1) * w + x) * 4 + c];
+              const left = copy[(y * w + (x - 1)) * 4 + c];
+              const right = copy[(y * w + (x + 1)) * 4 + c];
+
+              // Laplacian high-frequency edge calculation
+              const laplacian = (current * 4) - (up + down + left + right);
+              let val = current + laplacian * strength;
+
+              // Step 3: Adaptive Contrast & Tone Enhancement
+              if (contrastBoost > 0) {
+                // S-curve contrast stretching for rich skin/hair tones
+                const norm = val / 255;
+                const adjusted = (norm - 0.5) * (1 + contrastBoost * 0.45) + 0.5;
+                val = adjusted * 255;
+              }
+
+              d[idx + c] = Math.min(255, Math.max(0, val));
+            }
+          }
+        }
+
+        eCtx.putImageData(imgData, 0, 0);
+
+        // Update stats
+        document.getElementById('statsText').innerHTML = 
+          `Original: <span class="text-white font-mono">${rawImage.width}×${rawImage.height}px</span> → Enhanced: <span class="text-emerald-400 font-mono font-bold">${targetW}×${targetH}px (${scale}x HD)</span>`;
+
+        processingBox.classList.add('hidden');
+        workspace.classList.remove('hidden');
+
+        // Reset split slider to 50%
+        setSliderPosition(50);
+      }, 50);
+    }
+
+    /* ─── Before / After Slider Drag Logic ─── */
+    function setSliderPosition(percentage) {
+      percentage = Math.max(0, Math.min(100, percentage));
+      sliderHandle.style.left = percentage + '%';
+      beforeWrapper.style.width = percentage + '%';
+    }
+
+    function handleMove(e) {
+      if (!isDragging) return;
+      const rect = compareWrapper.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const x = clientX - rect.left;
+      const percentage = (x / rect.width) * 100;
+      setSliderPosition(percentage);
+    }
+
+    compareWrapper.addEventListener('mousedown', () => isDragging = true);
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('mousemove', handleMove);
+
+    compareWrapper.addEventListener('touchstart', () => isDragging = true);
+    window.addEventListener('touchend', () => isDragging = false);
+    window.addEventListener('touchmove', handleMove);
+
+    /* ─── Download Handler ─── */
+    document.getElementById('downloadBtn').onclick = () => {
+      const a = document.createElement('a');
+      a.download = 'privamedia_enhanced_hd.png';
+      a.href = enhancedCanvas.toDataURL('image/png', 1.0);
+      a.click();
+    };
+  </script>
+</body>
+</html>
