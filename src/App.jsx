@@ -20,6 +20,18 @@ const SocialDownloader = lazy(() => import('./components/tools/SocialDownloader'
 const QrCodeStudio = lazy(() => import('./components/tools/QrCodeStudio'));
 const FaviconGenerator = lazy(() => import('./components/tools/FaviconGenerator'));
 
+// Batch 1: New Tools
+const WordCounter = lazy(() => import('./components/text/WordCounter'));
+const CaseConverter = lazy(() => import('./components/text/CaseConverter'));
+const LoremGenerator = lazy(() => import('./components/text/LoremGenerator'));
+const PasswordGenerator = lazy(() => import('./components/tools/PasswordGenerator'));
+const AgeCalculator = lazy(() => import('./components/tools/AgeCalculator'));
+const JsonFormatter = lazy(() => import('./components/dev/JsonFormatter'));
+const Base64Tool = lazy(() => import('./components/dev/Base64Tool'));
+const ColorPickerTool = lazy(() => import('./components/tools/ColorPickerTool'));
+const UnitConverter = lazy(() => import('./components/tools/UnitConverter'));
+const PercentageCalc = lazy(() => import('./components/tools/PercentageCalc'));
+
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center py-20">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
@@ -72,6 +84,17 @@ export default function App() {
                   {activeTab === 'favicon' && <FaviconGenerator />}
                   {activeTab === 'exif' && <ExifStripper />}
                   {activeTab === 'palette' && <ColorPaletteExtractor />}
+                  {/* Batch 1: New Tools */}
+                  {activeTab === 'word-counter' && <WordCounter />}
+                  {activeTab === 'case-converter' && <CaseConverter />}
+                  {activeTab === 'lorem' && <LoremGenerator />}
+                  {activeTab === 'password' && <PasswordGenerator />}
+                  {activeTab === 'age-calc' && <AgeCalculator />}
+                  {activeTab === 'json' && <JsonFormatter />}
+                  {activeTab === 'base64' && <Base64Tool />}
+                  {activeTab === 'color-picker' && <ColorPickerTool />}
+                  {activeTab === 'unit-convert' && <UnitConverter />}
+                  {activeTab === 'percent-calc' && <PercentageCalc />}
                 </Suspense>
               </motion.div>
             </AnimatePresence>
