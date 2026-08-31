@@ -258,7 +258,7 @@ Generate structured JSON with:
 CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code fences.
 `;
 
-  // 1. Try NVIDIA NIM first
+  // 1. Try NVIDIA NIM first (google/diffusiongemma-26b-a4b-it - fast and accurate)
   try {
     console.log(`[AI Study Notes] Generating for topic: "${topic || content.slice(0, 30)}" via NVIDIA NIM...`);
     const nvRes = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
@@ -268,13 +268,13 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "meta/llama-3.2-11b-vision-instruct",
+        model: "google/diffusiongemma-26b-a4b-it",
         messages: [
-          { role: "system", content: "You are an expert exam tutor. You strictly output raw JSON without markdown code fences." },
+          { role: "system", content: "You strictly output raw JSON without markdown code fences." },
           { role: "user", content: promptText }
         ],
-        temperature: 0.3,
-        max_tokens: 2800
+        temperature: 0.2,
+        max_tokens: 2200
       })
     });
 
@@ -288,7 +288,7 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
         const normalized = normalizeStudyNotes(parsed, topic, grade);
         return res.json({ success: true, data: normalized, engine: 'nvidia' });
       } catch (parseErr) {
-        console.log(`[AI Study Notes] JSON parse failed on NVIDIA output, trying regex repair...`);
+        console.log(`[AI Study Notes] JSON parse error, attempting regex extraction...`);
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
@@ -298,12 +298,12 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
       }
     }
   } catch (nvErr) {
-    console.log(`[AI Study Notes] NVIDIA API failed (${nvErr.message}), falling back to Nara Router...`);
+    console.log(`[AI Study Notes] NVIDIA NIM failed (${nvErr.message}), trying Nara agnes-2.0-flash...`);
   }
 
-  // 2. Fallback to Nara Router (DeepSeek V4 Flash)
+  // 2. Fallback to Nara Router (agnes-2.0-flash)
   try {
-    console.log(`[AI Study Notes] Falling back to Nara DeepSeek V4...`);
+    console.log(`[AI Study Notes] Falling back to Nara agnes-2.0-flash...`);
     const naraRes = await fetch("https://router.bynara.id/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -311,13 +311,13 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "deepseek-v4-flash",
+        model: "agnes-2.0-flash",
         messages: [
-          { role: "system", content: "You are an expert exam tutor. You strictly output raw JSON without markdown code fences." },
+          { role: "system", content: "You strictly output raw JSON without markdown code fences." },
           { role: "user", content: promptText }
         ],
-        temperature: 0.3,
-        max_tokens: 2800
+        temperature: 0.2,
+        max_tokens: 2200
       })
     });
 
