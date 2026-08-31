@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { 
   BookOpen, Sparkles, PenTool, Brain, HelpCircle, FileText, Download, 
   Printer, CheckCircle2, XCircle, ChevronRight, Layers, GraduationCap, 
-  RotateCcw, Copy, Check, Share2, Award, Zap, ArrowRight, Eye, ShieldCheck
+  RotateCcw, Copy, Check, Share2, Award, Zap, ArrowRight, Eye, ShieldCheck,
+  RefreshCw, FileCheck, Lightbulb, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TiltCard from '../3d/TiltCard';
@@ -35,6 +36,7 @@ export default function StudyNotesStudio() {
   const [grade, setGrade] = useState('Class 10-12');
   const [language, setLanguage] = useState('English');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('Analyzing chapter topic...');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -68,6 +70,11 @@ export default function StudyNotesStudio() {
     setError(null);
     setUserAnswers({});
     setShowExplanations({});
+    setLoadingStep('Connecting to NVIDIA AI Brain...');
+
+    const stepTimer1 = setTimeout(() => setLoadingStep('Drafting Handwritten Notes & Definitions...'), 2000);
+    const stepTimer2 = setTimeout(() => setLoadingStep('Building Concept Flowcharts & Diagrams...'), 4500);
+    const stepTimer3 = setTimeout(() => setLoadingStep('Generating 5 High-Yield MCQs & 2/5-Mark Exam Questions...'), 7000);
 
     try {
       const res = await fetch('/api/ai/study-notes', {
@@ -91,12 +98,15 @@ export default function StudyNotesStudio() {
     } catch (err) {
       setError(err.message || 'Server is busy. Please try again.');
     } finally {
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      clearTimeout(stepTimer3);
       setIsLoading(false);
     }
   };
 
   const handleQuizSelect = (qIdx, optIdx) => {
-    if (userAnswers[qIdx] !== undefined) return; // already answered
+    if (userAnswers[qIdx] !== undefined) return;
     setUserAnswers(prev => ({ ...prev, [qIdx]: optIdx }));
     setShowExplanations(prev => ({ ...prev, [qIdx]: true }));
   };
@@ -106,15 +116,26 @@ export default function StudyNotesStudio() {
   };
 
   const copyToClipboard = (text, id) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopiedSection(id);
     setTimeout(() => setCopiedSection(null), 2000);
   };
 
-  // Calculate Quiz Score
-  const score = result?.mcqs ? Object.keys(userAnswers).reduce((acc, qIdx) => {
-    return userAnswers[qIdx] === result.mcqs[qIdx]?.correctIndex ? acc + 1 : acc;
-  }, 0) : 0;
+  // Safe Score calculation
+  const mcqList = Array.isArray(result?.mcqs) ? result.mcqs : [];
+  const score = mcqList.reduce((acc, mcq, qIdx) => {
+    return userAnswers[qIdx] === mcq?.correctIndex ? acc + 1 : acc;
+  }, 0);
+
+  // Safe Notes Copy String
+  const getNotesCopyText = () => {
+    if (!result || !Array.isArray(result.handwrittenNotes)) return '';
+    return result.handwrittenNotes.map(n => {
+      const pts = Array.isArray(n?.bulletPoints) ? n.bulletPoints.join('\n') : '';
+      return `${n?.heading || ''}\n${pts}\n${n?.highlightNote || ''}`;
+    }).join('\n\n');
+  };
 
   return (
     <div className="space-y-8">
@@ -218,8 +239,8 @@ export default function StudyNotesStudio() {
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-                  Generating Notes & MCQs with NVIDIA AI...
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Generating with NVIDIA AI...
                 </>
               ) : (
                 <>
@@ -230,9 +251,28 @@ export default function StudyNotesStudio() {
             </button>
           </div>
 
+          {/* Loading Animation Progress Bar */}
+          {isLoading && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-center space-y-3">
+              <div className="flex items-center justify-center gap-3 text-sm font-bold text-cyan-300">
+                <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
+                <span>{loadingStep}</span>
+              </div>
+              <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-white/10">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400"
+                  initial={{ width: "10%" }}
+                  animate={{ width: "95%" }}
+                  transition={{ duration: 12, ease: "linear" }}
+                />
+              </div>
+              <p className="text-xs text-slate-400">NVIDIA Neural Engine is structuring high-yield exam points, diagrams & questions...</p>
+            </motion.div>
+          )}
+
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-              <XCircle className="w-4 h-4 shrink-0" />
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
@@ -240,7 +280,7 @@ export default function StudyNotesStudio() {
       </div>
 
       {/* Generated Study Materials Studio */}
-      {result && (
+      {result && !isLoading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           
           {/* Main Navigation Tabs */}
@@ -276,7 +316,7 @@ export default function StudyNotesStudio() {
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <HelpCircle className="w-4 h-4" /> 🎯 MCQ Quiz ({result.mcqs?.length || 5})
+                <HelpCircle className="w-4 h-4" /> 🎯 MCQ Quiz ({mcqList.length})
               </button>
 
               <button
@@ -366,10 +406,7 @@ export default function StudyNotesStudio() {
                 </div>
 
                 <button
-                  onClick={() => copyToClipboard(
-                    result.handwrittenNotes?.map(n => `${n.heading}\n${n.bulletPoints?.join('\n')}\n${n.highlightNote || ''}`).join('\n\n'),
-                    'all-notes'
-                  )}
+                  onClick={() => copyToClipboard(getNotesCopyText(), 'all-notes')}
                   className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs flex items-center gap-1.5 border border-white/10"
                 >
                   {copiedSection === 'all-notes' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -404,7 +441,7 @@ export default function StudyNotesStudio() {
                 {/* Page Header (Date & Page No) */}
                 <div className="pl-16 flex items-center justify-between border-b border-rose-300 pb-2 mb-6 text-sm font-semibold text-slate-700">
                   <div className="flex items-center gap-4">
-                    <span><strong>Subject:</strong> {result.subject || 'General Study'}</span>
+                    <span><strong>Subject:</strong> {result.subject || 'General Studies'}</span>
                     <span><strong>Topic:</strong> {result.chapterTitle}</span>
                   </div>
                   <div className="flex items-center gap-6">
@@ -431,28 +468,35 @@ export default function StudyNotesStudio() {
                   </div>
 
                   {/* Sections */}
-                  {result.handwrittenNotes?.map((sec, idx) => (
+                  {Array.isArray(result.handwrittenNotes) && result.handwrittenNotes.map((sec, idx) => (
                     <div key={idx} className="space-y-3">
                       {/* Heading */}
                       <h2 
                         style={{ color: headingColor }}
                         className="text-2xl font-bold flex items-center gap-2"
                       >
-                        <span className="underline">{sec.heading}</span>
+                        <span className="underline">{sec?.heading || `Section ${idx + 1}`}</span>
                       </h2>
 
                       {/* Bullet Points */}
                       <ul className="space-y-2 text-xl sm:text-2xl pl-4">
-                        {sec.bulletPoints?.map((pt, pIdx) => (
-                          <li key={pIdx} className="flex items-start gap-2.5">
+                        {Array.isArray(sec?.bulletPoints) ? (
+                          sec.bulletPoints.map((pt, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2.5">
+                              <span className="text-rose-500 font-bold">➤</span>
+                              <span>{String(pt)}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="flex items-start gap-2.5">
                             <span className="text-rose-500 font-bold">➤</span>
-                            <span>{pt}</span>
+                            <span>{String(sec?.bulletPoints || '')}</span>
                           </li>
-                        ))}
+                        )}
                       </ul>
 
                       {/* Highlighted Exam Fact Box */}
-                      {sec.highlightNote && (
+                      {sec?.highlightNote && (
                         <div 
                           style={{ backgroundColor: highlightBg }}
                           className="p-3 rounded-lg border-l-4 border-amber-500 text-slate-900 font-bold text-lg sm:text-xl shadow-xs my-2"
@@ -481,7 +525,7 @@ export default function StudyNotesStudio() {
 
               {/* Flowchart Cards Connection Sequence */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-                {result.diagram?.steps?.map((step, idx) => (
+                {Array.isArray(result.diagram?.steps) && result.diagram.steps.map((step, idx) => (
                   <div 
                     key={idx} 
                     className="p-5 rounded-2xl bg-slate-950 border border-indigo-500/20 relative space-y-3 hover:border-indigo-500/60 transition-all group"
@@ -496,11 +540,11 @@ export default function StudyNotesStudio() {
                     </div>
 
                     <h4 className="font-bold text-sm text-white group-hover:text-cyan-300 transition-colors">
-                      {step.step}
+                      {step?.step || `Stage ${idx + 1}`}
                     </h4>
 
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      {step.detail}
+                      {step?.detail || ''}
                     </p>
 
                     {idx < (result.diagram.steps.length - 1) && (
@@ -528,23 +572,24 @@ export default function StudyNotesStudio() {
                 {/* Score Pill */}
                 <div className="px-5 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-white text-xs font-bold flex items-center gap-2">
                   <Award className="w-4 h-4 text-amber-400" />
-                  <span>Score: {score} / {result.mcqs?.length || 5}</span>
+                  <span>Score: {score} / {mcqList.length}</span>
                 </div>
               </div>
 
               {/* MCQs List */}
               <div className="space-y-6">
-                {result.mcqs?.map((mcq, qIdx) => {
+                {mcqList.map((mcq, qIdx) => {
                   const isAnswered = userAnswers[qIdx] !== undefined;
                   const selectedOpt = userAnswers[qIdx];
-                  const isCorrect = selectedOpt === mcq.correctIndex;
+                  const isCorrect = selectedOpt === mcq?.correctIndex;
+                  const options = Array.isArray(mcq?.options) ? mcq.options : [];
 
                   return (
                     <div key={qIdx} className="p-5 rounded-2xl bg-slate-950 border border-white/10 space-y-4">
                       <div className="flex items-start justify-between gap-3">
                         <h4 className="text-sm font-bold text-white flex items-start gap-2">
                           <span className="text-cyan-400 font-mono">Q{qIdx + 1}.</span>
-                          <span>{mcq.question}</span>
+                          <span>{mcq?.question}</span>
                         </h4>
 
                         {isAnswered && (
@@ -559,7 +604,7 @@ export default function StudyNotesStudio() {
 
                       {/* 4 Options Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {mcq.options?.map((opt, optIdx) => {
+                        {options.map((opt, optIdx) => {
                           let btnStyle = 'bg-slate-900 text-slate-300 border-white/10 hover:border-indigo-500/50';
 
                           if (isAnswered) {
@@ -582,16 +627,18 @@ export default function StudyNotesStudio() {
                               <span className="w-5 h-5 rounded-md bg-white/10 text-white font-mono text-[10px] flex items-center justify-center shrink-0">
                                 {String.fromCharCode(65 + optIdx)}
                               </span>
-                              <span>{opt}</span>
+                              <span>{String(opt)}</span>
                             </button>
                           );
                         })}
                       </div>
 
                       {/* Explanation Reveal */}
-                      {showExplanations[qIdx] && (
+                      {showExplanations[qIdx] && mcq?.explanation && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-slate-300 space-y-1">
-                          <strong className="text-cyan-300 block">💡 Explanation:</strong>
+                          <strong className="text-cyan-300 block flex items-center gap-1.5">
+                            <Lightbulb className="w-3.5 h-3.5 text-amber-400" /> Explanation:
+                          </strong>
                           <p>{mcq.explanation}</p>
                         </motion.div>
                       )}
@@ -613,23 +660,23 @@ export default function StudyNotesStudio() {
               </div>
 
               <div className="space-y-4">
-                {result.examQuestions?.map((q, idx) => (
+                {Array.isArray(result.examQuestions) && result.examQuestions.map((q, idx) => (
                   <div key={idx} className="p-5 rounded-2xl bg-slate-950 border border-white/10 space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <h4 className="text-sm font-bold text-white flex items-start gap-2">
                         <span className="text-cyan-400 font-mono">Q{idx + 1}.</span>
-                        <span>{q.question}</span>
+                        <span>{q?.question}</span>
                       </h4>
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ${
-                        q.marks === 5 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                        q?.marks === 5 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                       }`}>
-                        {q.marks} Marks
+                        {q?.marks || 2} Marks
                       </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-slate-900/90 border border-white/5 text-xs text-slate-300 whitespace-pre-line leading-relaxed">
                       <strong className="text-emerald-400 block mb-1">Model Answer:</strong>
-                      {q.answer}
+                      {q?.answer}
                     </div>
                   </div>
                 ))}

@@ -135,6 +135,86 @@ async function extractInstagramDirect(postUrl) {
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || "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";
 const NARA_API_KEY = process.env.NARA_API_KEY || "sk-nry-N9x2vinWSSErTHlfxxHd5nzXpTS_vUvq1mKThFcbUS4";
 
+function normalizeStudyNotes(raw, defaultTopic, defaultGrade) {
+  if (!raw || typeof raw !== 'object') raw = {};
+
+  const chapterTitle = raw.chapterTitle || raw.title || raw.topic || defaultTopic || "Study Chapter";
+  const subject = raw.subject || raw.grade || defaultGrade || "General Science & Studies";
+  const keyTakeaway = raw.keyTakeaway || raw.summary || raw.takeaway || "Essential summary points for quick revision.";
+
+  // Normalize handwrittenNotes
+  let notes = raw.handwrittenNotes || raw.notes || raw.sections || [];
+  if (!Array.isArray(notes)) {
+    if (typeof notes === 'object') notes = Object.values(notes);
+    else notes = [{ heading: "Key Concepts", bulletPoints: [String(notes)] }];
+  }
+
+  const handwrittenNotes = notes.map((n, idx) => {
+    if (typeof n === 'string') {
+      return { heading: `Section ${idx + 1}`, bulletPoints: [n], highlightNote: '' };
+    }
+    let points = n.bulletPoints || n.points || n.content || [];
+    if (!Array.isArray(points)) {
+      points = typeof points === 'string' ? points.split('\n').filter(Boolean) : [String(points)];
+    }
+    return {
+      heading: n.heading || n.title || `Concept ${idx + 1}`,
+      bulletPoints: points.map(p => String(p)),
+      highlightNote: n.highlightNote || n.highlight || n.tip || ''
+    };
+  });
+
+  // Normalize diagram
+  let diagram = raw.diagram || raw.flowchart || raw.conceptMap || { title: `${chapterTitle} Flowchart`, steps: [] };
+  let steps = diagram.steps || diagram.stages || [];
+  if (!Array.isArray(steps)) steps = [];
+  const normalizedSteps = steps.map((s, idx) => {
+    if (typeof s === 'string') return { step: `Step ${idx + 1}`, detail: s };
+    return { step: s.step || s.title || s.label || `Stage ${idx + 1}`, detail: s.detail || s.desc || s.description || '' };
+  });
+
+  // Normalize MCQs
+  let mcqs = raw.mcqs || raw.quiz || raw.questions || [];
+  if (!Array.isArray(mcqs)) mcqs = [];
+  const normalizedMcqs = mcqs.map((m, idx) => {
+    let opts = m.options || m.choices || ["Option A", "Option B", "Option C", "Option D"];
+    if (!Array.isArray(opts)) opts = Object.values(opts);
+    let correctIdx = typeof m.correctIndex === 'number' ? m.correctIndex : (typeof m.answer === 'number' ? m.answer : 0);
+    if (correctIdx < 0 || correctIdx >= opts.length) correctIdx = 0;
+    return {
+      question: m.question || `Question ${idx + 1}`,
+      options: opts.slice(0, 4).map(o => String(o)),
+      correctIndex: correctIdx,
+      explanation: m.explanation || m.detail || "Refer to the textbook concept for detailed derivation."
+    };
+  });
+
+  // Normalize Exam Questions
+  let examQuestions = raw.examQuestions || raw.importantQuestions || [];
+  if (!Array.isArray(examQuestions)) examQuestions = [];
+  const normalizedExamQuestions = examQuestions.map((q, idx) => {
+    return {
+      marks: q.marks === 5 ? 5 : 2,
+      question: q.question || `Exam Question ${idx + 1}`,
+      answer: q.answer || q.solution || "Model answer explanation."
+    };
+  });
+
+  return {
+    chapterTitle,
+    subject,
+    keyTakeaway,
+    handwrittenNotes: handwrittenNotes.length ? handwrittenNotes : [{ heading: "Chapter Overview", bulletPoints: ["Key definitions and core principles."], highlightNote: "" }],
+    diagram: { title: diagram.title || `${chapterTitle} Flowchart`, steps: normalizedSteps },
+    mcqs: normalizedMcqs.length ? normalizedMcqs : [
+      { question: "What is the primary concept of this chapter?", options: ["Option A", "Option B", "Option C", "Option D"], correctIndex: 0, explanation: "Standard definition." }
+    ],
+    examQuestions: normalizedExamQuestions.length ? normalizedExamQuestions : [
+      { marks: 2, question: `Define the core principles of ${chapterTitle}.`, answer: "Step by step textbook definition and key points." }
+    ]
+  };
+}
+
 app.post('/api/ai/study-notes', async (req, res) => {
   const { topic, content = '', grade = 'Class 10-12', language = 'English' } = req.body;
   if (!topic && !content) {
@@ -188,13 +268,15 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
 
       try {
         const parsed = JSON.parse(rawText);
-        return res.json({ success: true, data: parsed, engine: 'nvidia' });
+        const normalized = normalizeStudyNotes(parsed, topic, grade);
+        return res.json({ success: true, data: normalized, engine: 'nvidia' });
       } catch (parseErr) {
         console.log(`[AI Study Notes] JSON parse failed on NVIDIA output, trying regex repair...`);
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
-          return res.json({ success: true, data: parsed, engine: 'nvidia' });
+          const normalized = normalizeStudyNotes(parsed, topic, grade);
+          return res.json({ success: true, data: normalized, engine: 'nvidia' });
         }
       }
     }
@@ -227,7 +309,8 @@ CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code f
       let rawText = naraData.choices?.[0]?.message?.content?.trim() || "";
       rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       const parsed = JSON.parse(rawText);
-      return res.json({ success: true, data: parsed, engine: 'nara' });
+      const normalized = normalizeStudyNotes(parsed, topic, grade);
+      return res.json({ success: true, data: normalized, engine: 'nara' });
     }
   } catch (naraErr) {
     console.log(`[AI Study Notes] Nara API also failed: ${naraErr.message}`);
