@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image, Type, FileText, Hash, Code2, Calculator, KeyRound, AlignLeft, Clock, Percent, Binary, Pipette, Ruler, TextCursorInput, Lock, Wand2 } from 'lucide-react';
+import { ShieldCheck, Sparkles, Layers, Cpu, QrCode, Film, Palette, Image, Type, FileText, Hash, Code2, Calculator, KeyRound, AlignLeft, Clock, Percent, Binary, Pipette, Ruler, TextCursorInput, Lock, Wand2, GraduationCap, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Header({ activeTab, setActiveTab }) {
@@ -18,8 +18,10 @@ export default function Header({ activeTab, setActiveTab }) {
   }, []);
 
   const allTools = [
+    // Featured / Hot
+    { id: 'study-notes', label: '📚 AI Study Notes (NEW)', icon: GraduationCap, cat: 'study' },
+    { id: 'enhancer', label: 'AI Photo Enhancer', icon: Wand2, cat: 'image' },
     // Image Tools
-    { id: 'enhancer', label: 'AI Enhancer (NEW)', icon: Wand2, cat: 'image' },
     { id: 'compress', label: 'Compressor', icon: Sparkles, cat: 'image' },
     { id: 'resize', label: 'Resize & Crop', icon: Cpu, cat: 'image' },
     { id: 'bg-remove', label: 'AI BG Remover', icon: Image, cat: 'image' },
@@ -49,7 +51,8 @@ export default function Header({ activeTab, setActiveTab }) {
   ];
 
   const categoryFilters = [
-    { id: 'all', label: 'All (23)' },
+    { id: 'all', label: 'All (24)' },
+    { id: 'study', label: '📚 AI Study (HOT)' },
     { id: 'image', label: '🖼️ Image' },
     { id: 'pdf', label: '📄 PDF' },
     { id: 'text', label: '📝 Text' },

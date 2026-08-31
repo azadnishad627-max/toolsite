@@ -20,6 +20,7 @@ const ColorPaletteExtractor = lazy(() => import('./components/tools/ColorPalette
 const SocialDownloader = lazy(() => import('./components/tools/SocialDownloader'));
 const QrCodeStudio = lazy(() => import('./components/tools/QrCodeStudio'));
 const FaviconGenerator = lazy(() => import('./components/tools/FaviconGenerator'));
+const StudyNotesStudio = lazy(() => import('./components/study/StudyNotesStudio'));
 
 // Batch 1: New Tools
 const WordCounter = lazy(() => import('./components/text/WordCounter'));
@@ -74,6 +75,7 @@ export default function App() {
                   {activeTab === 'compress' && (
                     <ImageCompressor onSavingsAdd={handleSavingsAdd} />
                   )}
+                  {activeTab === 'study-notes' && <StudyNotesStudio />}
                   {activeTab === 'enhancer' && <PhotoEnhancer />}
                   {activeTab === 'resize' && <ImageResizer />}
                   {activeTab === 'bg-remove' && <BackgroundRemover />}

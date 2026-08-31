@@ -131,6 +131,111 @@ async function extractInstagramDirect(postUrl) {
   return null;
 }
 
+/* ── AI STUDY NOTES & EXAM STUDIO API ROUTE ── */
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || "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";
+const NARA_API_KEY = process.env.NARA_API_KEY || "sk-nry-N9x2vinWSSErTHlfxxHd5nzXpTS_vUvq1mKThFcbUS4";
+
+app.post('/api/ai/study-notes', async (req, res) => {
+  const { topic, content = '', grade = 'Class 10-12', language = 'English' } = req.body;
+  if (!topic && !content) {
+    return res.status(400).json({ success: false, error: 'Topic or chapter content is required' });
+  }
+
+  const promptText = `
+You are a master educator, textbook author, and exam paper setter.
+Create comprehensive, high-yield study material for:
+Topic / Chapter: "${topic || 'Provided Content'}"
+Grade Level: "${grade}"
+Language / Style: "${language}"
+${content ? `Input Text Content: "${content.slice(0, 3000)}"` : ''}
+
+Generate structured JSON with:
+1. "chapterTitle": Clear concise title
+2. "subject": Subject name & class level
+3. "keyTakeaway": 1-2 sentence core concept
+4. "handwrittenNotes": Array of 3-5 sections (each with "heading", "bulletPoints" (2-4 clear points with definitions/formulas), "highlightNote" (1 crucial exam tip/formula))
+5. "diagram": Object with "title" and "steps" (Array of 3-5 sequential concept cards with "step" and "detail")
+6. "mcqs": Array of 5 high-yield exam MCQs (each with "question", "options" [4 strings], "correctIndex" [0-3], "explanation")
+7. "examQuestions": Array of 4 most expected exam questions (2 short 2-mark, 2 long 5-mark, each with "marks", "question", "answer")
+
+CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code fences.
+`;
+
+  // 1. Try NVIDIA NIM first
+  try {
+    console.log(`[AI Study Notes] Generating for topic: "${topic || content.slice(0, 30)}" via NVIDIA NIM...`);
+    const nvRes = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${NVIDIA_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "meta/llama-3.2-11b-vision-instruct",
+        messages: [
+          { role: "system", content: "You are an expert exam tutor. You strictly output raw JSON without markdown code fences." },
+          { role: "user", content: promptText }
+        ],
+        temperature: 0.3,
+        max_tokens: 2800
+      })
+    });
+
+    if (nvRes.ok) {
+      const nvData = await nvRes.json();
+      let rawText = nvData.choices?.[0]?.message?.content?.trim() || "";
+      rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      try {
+        const parsed = JSON.parse(rawText);
+        return res.json({ success: true, data: parsed, engine: 'nvidia' });
+      } catch (parseErr) {
+        console.log(`[AI Study Notes] JSON parse failed on NVIDIA output, trying regex repair...`);
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return res.json({ success: true, data: parsed, engine: 'nvidia' });
+        }
+      }
+    }
+  } catch (nvErr) {
+    console.log(`[AI Study Notes] NVIDIA API failed (${nvErr.message}), falling back to Nara Router...`);
+  }
+
+  // 2. Fallback to Nara Router (DeepSeek V4 Flash)
+  try {
+    console.log(`[AI Study Notes] Falling back to Nara DeepSeek V4...`);
+    const naraRes = await fetch("https://router.bynara.id/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${NARA_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "deepseek-v4-flash",
+        messages: [
+          { role: "system", content: "You are an expert exam tutor. You strictly output raw JSON without markdown code fences." },
+          { role: "user", content: promptText }
+        ],
+        temperature: 0.3,
+        max_tokens: 2800
+      })
+    });
+
+    if (naraRes.ok) {
+      const naraData = await naraRes.json();
+      let rawText = naraData.choices?.[0]?.message?.content?.trim() || "";
+      rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = JSON.parse(rawText);
+      return res.json({ success: true, data: parsed, engine: 'nara' });
+    }
+  } catch (naraErr) {
+    console.log(`[AI Study Notes] Nara API also failed: ${naraErr.message}`);
+  }
+
+  res.status(500).json({ success: false, error: 'AI generation timed out. Please try again with a shorter topic.' });
+});
+
 /* ── API ROUTES ── */
 app.post('/api/info', async (req, res) => {
   const { url } = req.body;
