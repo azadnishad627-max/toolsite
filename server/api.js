@@ -221,22 +221,39 @@ app.post('/api/ai/study-notes', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Topic or chapter content is required' });
   }
 
+  const isHindi = language.toLowerCase().includes('hindi') || language.toLowerCase().includes('हिन्दी');
+  const isHinglish = language.toLowerCase().includes('hinglish');
+
+  const langInstruction = isHindi 
+    ? 'IMPORTANT: Write ALL content, notes, headings, bullet points, MCQs, options, and explanations in pure, standard Hindi (हिन्दी भाषा - देवनागरी लिपि में लिखें).'
+    : (isHinglish 
+        ? 'IMPORTANT: Write all content in friendly Hinglish (Roman Hindi + English terms, easily understandable by Indian students, e.g. "Photosynthesis ek aisi prakriya hai jisme paudhe...").'
+        : 'IMPORTANT: Write all content in clear, comprehensive, high-yield academic English.');
+
   const promptText = `
-You are a master educator, textbook author, and exam paper setter.
-Create comprehensive, high-yield study material for:
+You are an award-winning textbook author, exam paper setter, and visual tutor.
+Create in-depth, comprehensive study material for:
 Topic / Chapter: "${topic || 'Provided Content'}"
 Grade Level: "${grade}"
-Language / Style: "${language}"
-${content ? `Input Text Content: "${content.slice(0, 3000)}"` : ''}
+Target Language: "${language}"
+${content ? `Provided Textbook Excerpt: "${content.slice(0, 3000)}"` : ''}
+
+${langInstruction}
 
 Generate structured JSON with:
-1. "chapterTitle": Clear concise title
+1. "chapterTitle": Clear title of the chapter in the target language
 2. "subject": Subject name & class level
-3. "keyTakeaway": 1-2 sentence core concept
-4. "handwrittenNotes": Array of 3-5 sections (each with "heading", "bulletPoints" (2-4 clear points with definitions/formulas), "highlightNote" (1 crucial exam tip/formula))
-5. "diagram": Object with "title" and "steps" (Array of 3-5 sequential concept cards with "step" and "detail")
-6. "mcqs": Array of 5 high-yield exam MCQs (each with "question", "options" [4 strings], "correctIndex" [0-3], "explanation")
-7. "examQuestions": Array of 4 most expected exam questions (2 short 2-mark, 2 long 5-mark, each with "marks", "question", "answer")
+3. "keyTakeaway": 1-2 sentence core foundational concept (Golden Rule)
+4. "handwrittenNotes": Array of 3-5 comprehensive sections (each with:
+   - "heading": Section title (e.g. "1. परिभाषा एवं मुख्य सिद्धांत" or "1. Definition & Core Principles")
+   - "bulletPoints": Array of 3-5 thorough points with definitions, equations, scientific laws, or key timeline facts
+   - "highlightNote": 1 high-yield Exam Tip / Golden Formula / Mnemonic
+   )
+5. "diagram": Visual concept architecture object with:
+   - "title": Title of the flowchart / process
+   - "steps": Array of 3-6 sequential stages (each with "step" (stage title) and "detail" (clear explanation of what happens in this stage))
+6. "mcqs": Array of 5 practice exam MCQs (each with "question", "options" [4 strings], "correctIndex" [0-3], "explanation" in target language)
+7. "examQuestions": Array of 4 expected board/competitive exam questions (2 short 2-mark, 2 long 5-mark, each with "marks", "question", "answer" written with complete model answers)
 
 CRITICAL: Return ONLY valid, raw JSON. Do NOT wrap in markdown \`\`\`json code fences.
 `;
